@@ -18,7 +18,8 @@ class Client:
         args: Any,                  
     ):
         torch.manual_seed(rank)
-
+        np.random.seed(rank)
+        
         self.model = HGNN(
             in_ch = args.num_features,
             n_class = args.num_classes,

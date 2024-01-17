@@ -10,13 +10,17 @@
 
 """
  
-import torch
-
+import sys
 import numpy as np
+import torch
+import pickle as pkl
+import torch_sparse
+import networkx as nx
+import scipy.sparse as sp
 
 from collections import Counter
-from torch_scatter import scatter_add
-from torch_geometric.nn.conv.gcn_conv import gcn_norm
+import torch_geometric
+
 
 def ExtractV2E(data):
     # Assume edge_index = [V|E;E|V]
@@ -197,11 +201,13 @@ def get_in_comm_indexes(data, split_idx):
         cur_idx += 1
     
     for ids_client in split_idx: 
+        # print(len(ids_client["total"]))
         nodes_in_com = set(ids_client["total"].tolist())
         for idx in ids_client["total"]:
             neigbor = np.where(adj[idx] == 1)[0]
             nodes_in_com.update(neigbor)
         ids_client["total"] = torch.tensor(list(nodes_in_com))
+        # print(len(ids_client["total"]))
     return split_idx
     
 def ConstructH(data, split_idxs):
@@ -233,7 +239,6 @@ def ConstructH(data, split_idxs):
             edge_index = np.delete(edge_index, idx, 1)  
         
         H = np.zeros((len(node_ids), num_hyperedges))
-        
         
         # print(edge_index)         
 
@@ -287,3 +292,206 @@ def generate_G_from_H(H_clients):
         G = DV2 * H * W * invDE * HT * DV2
         G_clients.append(torch.Tensor(G))
     return G_clients
+
+def load_simple_graph(dataset_str: str):
+    """
+    This function loads input data from gcn/data directory
+
+    Argument:
+    dataset_str: Dataset name
+
+    Return:
+    All data input files loaded (as well as the training/test data).
+
+    Note:
+    ind.dataset_str.x => the feature vectors of the training instances as scipy.sparse.csr.csr_matrix object;
+    ind.dataset_str.tx => the feature vectors of the test instances as scipy.sparse.csr.csr_matrix object;
+    ind.dataset_str.allx => the feature vectors of both labeled and unlabeled training instances
+        (a superset of ind.dataset_str.x) as scipy.sparse.csr.csr_matrix object;
+    ind.dataset_str.y => the one-hot labels of the labeled training instances as numpy.ndarray object;
+    ind.dataset_str.ty => the one-hot labels of the test instances as numpy.ndarray object;
+    ind.dataset_str.ally => the labels for instances in ind.dataset_str.allx as numpy.ndarray object;
+    ind.dataset_str.graph => a dict in the format {index: [index_of_neighbor_nodes]} as collections.defaultdict
+        object;
+    ind.dataset_str.test.index => the indices of test instances in graph, for the inductive setting as list object.
+
+    All objects above must be saved using python pickle module.
+    """
+
+    if dataset_str in ["cora", "citeseer", "pubmed"]:
+        names = ["x", "y", "tx", "ty", "allx", "ally", "graph"]
+        objects = []
+        for i in range(len(names)):
+            with open("data/ind.{}.{}".format(dataset_str, names[i]), "rb") as f:
+                if sys.version_info > (3, 0):
+                    objects.append(pkl.load(f, encoding="latin1"))
+                else:
+                    objects.append(pkl.load(f))
+
+        x, y, tx, ty, allx, ally, graph = tuple(objects)
+        test_idx_reorder = parse_index_file(
+            "data/ind.{}.test.index".format(dataset_str)
+        )
+        test_idx_range = np.sort(test_idx_reorder)
+
+        if dataset_str == "citeseer":
+            # Fix citeseer dataset (there are some isolated nodes in the graph)
+            # Find isolated nodes, add them as zero-vecs into the right position
+            test_idx_range_full = range(
+                min(test_idx_reorder), max(test_idx_reorder) + 1
+            )
+            tx_extended = sp.lil_matrix((len(test_idx_range_full), x.shape[1]))
+            tx_extended[test_idx_range - min(test_idx_range), :] = tx
+            tx = tx_extended
+            ty_extended = np.zeros((len(test_idx_range_full), y.shape[1]))
+            ty_extended[test_idx_range - min(test_idx_range), :] = ty
+            ty = ty_extended
+
+        features = sp.vstack((allx, tx)).tolil()
+        features[test_idx_reorder, :] = features[test_idx_range, :]
+        adj = nx.adjacency_matrix(nx.from_dict_of_lists(graph))
+
+        labels = np.vstack((ally, ty))
+        labels[test_idx_reorder, :] = labels[test_idx_range, :]
+
+        idx_test = torch.LongTensor(test_idx_range.tolist())
+        idx_train = torch.LongTensor(range(len(y)))
+        idx_val = torch.LongTensor(range(len(y), len(y) + 500))
+
+        # features = normalize(features)
+        # adj = normalize(adj)    # no normalize adj here, normalize it in the training process
+
+        features = torch.tensor(features.toarray()).float()
+        adj = torch.tensor(adj.toarray()).float()
+        adj = torch_sparse.tensor.SparseTensor.from_dense(adj)
+        labels = torch.tensor(labels)
+        labels = torch.argmax(labels, dim=1)
+
+    return features.float(), adj, labels, idx_train, idx_val, idx_test
+
+def parse_index_file(filename: str):
+    """
+    This function reads and parses an index file
+
+    Args:
+    filename: (str) - name or path of the file to parse
+
+    Return:
+    index: (list) - list of integers, each integer in the list represents int of the lines lines of the input file.
+    """
+    
+    index = []
+    for line in open(filename):
+        index.append(int(line.strip()))
+    return index
+
+def get_simple_in_comm_indexes(
+    edge_index: torch.Tensor,
+    split_data_indexes: list,
+    num_clients: int,
+    L_hop: int,
+    idx_train: torch.Tensor,
+    idx_test: torch.Tensor,
+    idx_val: torch.Tensor,
+):
+    """
+    This function is used to extract and preprocess data indices and edge information
+
+    Arguments:
+    edge_index: (PyTorch tensor) - Edge information (connection between nodes) of the graph dataset
+    split_data_indexes: (List) - A list of indices of data points assigned to a particular group post data partition
+    num_clients: (int) - Total number of clients
+    L_hop: (int) - Number of hops
+    idx_train: (PyTorch tensor) - Indices of training data
+    idx_test: (PyTorch tensor) - Indices of test data
+
+    Returns:
+    communicate_indexes: (list) - A list of indices assigned to a particular client
+    in_com_train_data_indexes: (list) - A list of tensors where each tensor contains the indices of training data points available to each client
+    edge_indexes_clients: (list) - A list of edge tensors representing the edges between nodes within each client's subgraph
+    """
+    communicate_indexes = []
+    in_com_train_data_indexes = []
+    edge_indexes_clients = []
+
+    for i in range(num_clients):
+        communicate_index = split_data_indexes[i]
+        
+        if L_hop == 0:
+            (
+                communicate_index,
+                current_edge_index,
+                _,
+                __,
+            ) = torch_geometric.utils.k_hop_subgraph(
+                communicate_index, 0, edge_index, relabel_nodes=True
+            )
+            del _
+            del __
+
+        for hop in range(L_hop):
+            # print(len(communicate_index))
+            if hop != L_hop - 1:
+                communicate_index = torch_geometric.utils.k_hop_subgraph(
+                    communicate_index, 1, edge_index, relabel_nodes=True
+                )[0]
+            else:
+                (
+                    communicate_index,
+                    current_edge_index,
+                    _,
+                    __,
+                ) = torch_geometric.utils.k_hop_subgraph(
+                    node_idx=communicate_index, num_hops=1, edge_index=edge_index, relabel_nodes=True
+                )
+                del _
+                del __
+        # print(len(communicate_index))
+        communicate_index = communicate_index.to("cpu")
+        current_edge_index = current_edge_index.to("cpu")
+        communicate_indexes.append(communicate_index)
+
+        current_edge_index = torch_sparse.SparseTensor(
+            row=current_edge_index[0],
+            col=current_edge_index[1],
+            sparse_sizes=(len(communicate_index), len(communicate_index)),
+        )
+
+        edge_indexes_clients.append(current_edge_index)
+
+        inter = intersect1d(
+            split_data_indexes[i], idx_train
+        )  ###only count the train data of nodes in current server(not communicate nodes)
+
+        in_com_train_data_indexes.append(
+            torch.searchsorted(communicate_indexes[i], inter).clone()
+        )  # local id in block matrix
+
+    in_com_test_data_indexes = []
+    for i in range(num_clients):
+        inter = intersect1d(split_data_indexes[i], idx_test)
+        in_com_test_data_indexes.append(
+            torch.searchsorted(communicate_indexes[i], inter).clone()
+        )
+    return (
+        communicate_indexes,
+        in_com_train_data_indexes,
+        in_com_test_data_indexes,
+        edge_indexes_clients,
+    )
+    
+def intersect1d(t1: torch.Tensor, t2: torch.Tensor) -> torch.Tensor:
+    """
+    This function concatenates the two input tensors, finding common elements between these two
+
+    Argument:
+    t1: (PyTorch tensor) - The first input tensor for the operation
+    t2: (PyTorch tensor) - The second input tensor for the operation
+
+    Return:
+    intersection: (PyTorch tensor) - Intersection of the two input tensors
+    """
+    combined = torch.cat((t1, t2))
+    uniques, counts = combined.unique(return_counts=True)
+    intersection = uniques[counts > 1]
+    return intersection

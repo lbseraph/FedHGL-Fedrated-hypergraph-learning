@@ -9,10 +9,7 @@ import torch
 import argparse
 
 import numpy as np
-import os.path as osp
-import torch.nn as nn
 import torch.nn.functional as F
-import matplotlib.pyplot as plt
 
 from tqdm import tqdm
 
@@ -23,12 +20,55 @@ from client import Client
 from server import Server
 from data_loader import dataset_Hypergraph
 
+def load_dataset(args):
+    existing_dataset = ['ModelNet40', 'NTU2012',
+                    'cora', 'citeseer', 'pubmed']
+    if args.method == 'FedHGNN':
+        # 读取超图数据集
+        if args.dname in existing_dataset:
+            dname = args.dname
+
+            if dname in ['cora', 'citeseer','pubmed']:
+                p2raw = './data/AllSet_all_raw_data/cocitation/'
+            else:
+                p2raw = './data/AllSet_all_raw_data/'
+            dataset = dataset_Hypergraph(name=dname,root = './data/pyg_data/hypergraph_dataset_updated/',
+                                            p2raw = p2raw)
+            data = dataset.data
+            # print(data.edge_index)
+            args.num_features = dataset.num_features
+            args.num_classes = dataset.num_classes
+
+            if not hasattr(data, 'n_x'):
+                data.n_x = torch.tensor([data.x.shape[0]])
+            if not hasattr(data, 'num_hyperedges'):
+                # note that we assume the he_id == consecutive.
+                data.num_hyperedges = torch.tensor(
+                    [data.edge_index[0].max()-data.n_x[0]+1])
+    
+            data = ExtractV2E(data)
+            if args.add_self_loop:
+                data = Add_Self_Loops(data)
+        else:
+            raise RuntimeError("Unknown dataset!")  
+    elif args.method == 'FedGCN': 
+        # 读取简单图数据集
+        if args.dname in existing_dataset:
+            features, adj, labels, idx_train, idx_val, idx_test = load_simple_graph(args.dataset)
+            args.num_classes = labels.max().item() + 1
+            row, col, edge_attr = adj.coo()
+            edge_index = torch.stack([row, col], dim=0)    
+    else:
+        raise RuntimeError("Unknown method!")     
+    
+    return data
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--train_prop', type=float, default=0.5)
     parser.add_argument('--valid_prop', type=float, default=0.25)
     parser.add_argument('--dname', default='walmart-trips-100')
-    parser.add_argument('--method', default='HGNN')
+    parser.add_argument('--method', default='FedHGNN')
     parser.add_argument('--local_step', default=3, type=int)
     # Number of runs for each split (test fix, only shuffle train/val)
     parser.add_argument('--runs', default=10, type=int)
@@ -45,9 +85,6 @@ if __name__ == '__main__':
 
     parser.add_argument('--num_features', default=0, type=int)  # Placeholder
     parser.add_argument('--num_classes', default=0, type=int)  # Placeholder
-    # Choose std for synthetic feature noise
-    parser.add_argument('--feature_noise', default='1', type=str)
-
     # FL setting
     # only use local data
     parser.add_argument('--local', action='store_true')
@@ -65,37 +102,9 @@ if __name__ == '__main__':
     # # Part 1: Load data
     
     ### Load and preprocess data ###
-    existing_dataset = ['ModelNet40', 'NTU2012',
-                        'cora', 'citeseer', 'pubmed']
-    
-    
-    if args.dname in existing_dataset:
-        dname = args.dname
-
-        if dname in ['cora', 'citeseer','pubmed']:
-            p2raw = './data/AllSet_all_raw_data/cocitation/'
-        else:
-            p2raw = './data/AllSet_all_raw_data/'
-        dataset = dataset_Hypergraph(name=dname,root = './data/pyg_data/hypergraph_dataset_updated/',
-                                        p2raw = p2raw)
-        data = dataset.data
-        # print(data.edge_index)
-        args.num_features = dataset.num_features
-        args.num_classes = dataset.num_classes
-
-        if not hasattr(data, 'n_x'):
-            data.n_x = torch.tensor([data.x.shape[0]])
-        if not hasattr(data, 'num_hyperedges'):
-            # note that we assume the he_id == consecutive.
-            data.num_hyperedges = torch.tensor(
-                [data.edge_index[0].max()-data.n_x[0]+1])
-    
-    if args.method == 'HGNN':
-        data = ExtractV2E(data)
-        if args.add_self_loop:
-            data = Add_Self_Loops(data)
-    else:
-        raise RuntimeError("Unknown method!")     
+    np.random.seed(42)
+    torch.manual_seed(42)
+    data = load_dataset(args)
         
     # put things to device
     if args.cuda in [0, 1]:
