@@ -2,31 +2,36 @@ from typing import Any
 
 import numpy as np
 import torch
-import torch.nn.functional as F
 
-from models import HGNN
+from models import HGNN, GCN
 
 class Client:
     def __init__(
         self,
         rank: int,
         G: torch.Tensor,
-        labels: torch.Tensor,
         features: torch.Tensor,
+        labels: torch.Tensor,
         idx: torch.Tensor,
         device: torch.device,
         args: Any,                  
     ):
-        torch.manual_seed(rank)
-        np.random.seed(rank)
-        
-        self.model = HGNN(
-            in_ch = args.num_features,
-            n_class = args.num_classes,
-            n_hid = args.hiddens_num,
-            dropout=0.5, 
-            layer_num=args.layers_num,
-        )
+        if args.method == "FedHGNN":
+            self.model = HGNN(
+                in_ch = args.num_features,
+                n_class = args.num_classes,
+                n_hid = args.hiddens_num,
+                dropout=0.5, 
+                layer_num=args.layers_num,
+            )
+        elif args.method == "FedGCN":
+            self.model = GCN(
+                nfeat=args.num_features,
+                nhid=args.hiddens_num,
+                nclass=args.num_classes,
+                dropout=0.5,
+                NumLayers=args.num_layers,
+            )
         self.model = self.model.to(device)
         self.rank = rank  # rank = client ID
         self.device = device

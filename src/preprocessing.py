@@ -184,11 +184,16 @@ def rand_train_test_idx(indexes, train_prop=.5, valid_prop=.25, ignore_negative=
         split_idx_list.append(split_idx)
     return split_idx_list
 
-def get_in_comm_indexes(data, split_idx):
+def get_in_comm_indexes(data, split_idx, safty=False):
 
     # 计算邻接
     edge_index = np.array(data.edge_index)
-    
+    # 节点所属客户端
+    nodes_client = np.zeros(len(data.y))
+    if safty:
+        for i in range(len(split_idx)):
+            nodes_client[split_idx[i]["total"].numpy()] = i   
+            safty_node = set()
     # Don't use edge_index[0].max()+1, as some nodes maybe isolated
     num_nodes = data.x.shape[0]
     adj = np.zeros((num_nodes, num_nodes))
@@ -198,16 +203,33 @@ def get_in_comm_indexes(data, split_idx):
         nodes_in_he = edge_index[0][edge_index[1] == he]
         for node_id in nodes_in_he:
             adj[node_id, nodes_in_he] = 1.
+            # find safty node which has inter neighbor
+            if safty:
+                for node2 in nodes_in_he:
+                    if nodes_client[node_id] == nodes_client[node2] and node_id != node2:
+                        safty_node.add(node_id)
+            
         cur_idx += 1
     
     for ids_client in split_idx: 
-        # print(len(ids_client["total"]))
-        nodes_in_com = set(ids_client["total"].tolist())
-        for idx in ids_client["total"]:
-            neigbor = np.where(adj[idx] == 1)[0]
-            nodes_in_com.update(neigbor)
+        # print("begin", len(ids_client["total"]), safty)
+        id_list = ids_client["total"].tolist()
+        nodes_in_com = set(id_list)
+        for idx in id_list:
+            neighbors = np.where(adj[idx] == 1)[0]
+            if safty:
+                safty_neighbors = []
+                safty_neighbors.append(idx)
+                for neighbor in neighbors:
+                    if neighbor in safty_node:
+                        safty_neighbors.append(neighbor)
+                # TODO delete neigbors which have no inter neigbor
+                neighbors = safty_neighbors
+            # print(neighbors)
+            nodes_in_com.update(neighbors)
+        # print(nodes_in_com)
         ids_client["total"] = torch.tensor(list(nodes_in_com))
-        # print(len(ids_client["total"]))
+        # print("after", len(ids_client["total"]))
     return split_idx
     
 def ConstructH(data, split_idxs):
@@ -322,7 +344,7 @@ def load_simple_graph(dataset_str: str):
         names = ["x", "y", "tx", "ty", "allx", "ally", "graph"]
         objects = []
         for i in range(len(names)):
-            with open("data/ind.{}.{}".format(dataset_str, names[i]), "rb") as f:
+            with open("data/simple/ind.{}.{}".format(dataset_str, names[i]), "rb") as f:
                 if sys.version_info > (3, 0):
                     objects.append(pkl.load(f, encoding="latin1"))
                 else:
@@ -330,7 +352,7 @@ def load_simple_graph(dataset_str: str):
 
         x, y, tx, ty, allx, ally, graph = tuple(objects)
         test_idx_reorder = parse_index_file(
-            "data/ind.{}.test.index".format(dataset_str)
+            "data/simple/ind.{}.test.index".format(dataset_str)
         )
         test_idx_range = np.sort(test_idx_reorder)
 
@@ -355,9 +377,11 @@ def load_simple_graph(dataset_str: str):
         labels[test_idx_reorder, :] = labels[test_idx_range, :]
 
         idx_test = torch.LongTensor(test_idx_range.tolist())
+        print("???", idx_test)
         idx_train = torch.LongTensor(range(len(y)))
+        print(idx_train)
         idx_val = torch.LongTensor(range(len(y), len(y) + 500))
-
+        print(idx_val)
         # features = normalize(features)
         # adj = normalize(adj)    # no normalize adj here, normalize it in the training process
 
@@ -391,8 +415,8 @@ def get_simple_in_comm_indexes(
     num_clients: int,
     L_hop: int,
     idx_train: torch.Tensor,
-    idx_test: torch.Tensor,
     idx_val: torch.Tensor,
+    idx_test: torch.Tensor,
 ):
     """
     This function is used to extract and preprocess data indices and edge information
@@ -411,9 +435,9 @@ def get_simple_in_comm_indexes(
     edge_indexes_clients: (list) - A list of edge tensors representing the edges between nodes within each client's subgraph
     """
     communicate_indexes = []
-    in_com_train_data_indexes = []
     edge_indexes_clients = []
-
+    split_idx_list = []
+    
     for i in range(num_clients):
         communicate_index = split_data_indexes[i]
         
@@ -458,27 +482,14 @@ def get_simple_in_comm_indexes(
         )
 
         edge_indexes_clients.append(current_edge_index)
-
-        inter = intersect1d(
-            split_data_indexes[i], idx_train
-        )  ###only count the train data of nodes in current server(not communicate nodes)
-
-        in_com_train_data_indexes.append(
-            torch.searchsorted(communicate_indexes[i], inter).clone()
-        )  # local id in block matrix
-
-    in_com_test_data_indexes = []
-    for i in range(num_clients):
-        inter = intersect1d(split_data_indexes[i], idx_test)
-        in_com_test_data_indexes.append(
-            torch.searchsorted(communicate_indexes[i], inter).clone()
-        )
-    return (
-        communicate_indexes,
-        in_com_train_data_indexes,
-        in_com_test_data_indexes,
-        edge_indexes_clients,
-    )
+        split_idx_list.append({
+            'total' : communicate_indexes[i],
+            'train': intersect1d(split_data_indexes[i], idx_train),
+            'val': intersect1d(split_data_indexes[i], idx_val),
+            'test': intersect1d(split_data_indexes[i], idx_test),  
+        })
+        
+    return split_idx_list, edge_indexes_clients
     
 def intersect1d(t1: torch.Tensor, t2: torch.Tensor) -> torch.Tensor:
     """

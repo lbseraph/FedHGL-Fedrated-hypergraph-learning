@@ -17,7 +17,6 @@ import scipy.sparse as sp
 
 from torch_geometric.data import Data
 from torch_sparse import coalesce
-# from randomperm_code import random_planetoid_splits
 from sklearn.feature_extraction.text import CountVectorizer
 
 def load_LE_dataset(path=None, dataset="ModelNet40", train_percent = 0.025):

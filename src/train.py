@@ -23,45 +23,71 @@ from data_loader import dataset_Hypergraph
 def load_dataset(args):
     existing_dataset = ['ModelNet40', 'NTU2012',
                     'cora', 'citeseer', 'pubmed']
-    if args.method == 'FedHGNN':
+    if args.dname not in existing_dataset:
+        raise RuntimeError("Unknown dataset!")
+        
+    simple_graph_method = ["FedGCN", "FedSage+"]
+    hypergraph_method = ["FedHGNN"]
+    if args.method in hypergraph_method:
         # 读取超图数据集
-        if args.dname in existing_dataset:
-            dname = args.dname
-
-            if dname in ['cora', 'citeseer','pubmed']:
-                p2raw = './data/AllSet_all_raw_data/cocitation/'
-            else:
-                p2raw = './data/AllSet_all_raw_data/'
-            dataset = dataset_Hypergraph(name=dname,root = './data/pyg_data/hypergraph_dataset_updated/',
-                                            p2raw = p2raw)
-            data = dataset.data
-            # print(data.edge_index)
-            args.num_features = dataset.num_features
-            args.num_classes = dataset.num_classes
-
-            if not hasattr(data, 'n_x'):
-                data.n_x = torch.tensor([data.x.shape[0]])
-            if not hasattr(data, 'num_hyperedges'):
-                # note that we assume the he_id == consecutive.
-                data.num_hyperedges = torch.tensor(
-                    [data.edge_index[0].max()-data.n_x[0]+1])
-    
-            data = ExtractV2E(data)
-            if args.add_self_loop:
-                data = Add_Self_Loops(data)
+        dname = args.dname
+        if dname in ['cora', 'citeseer','pubmed']:
+            p2raw = './data/AllSet_all_raw_data/cocitation/'
         else:
-            raise RuntimeError("Unknown dataset!")  
-    elif args.method == 'FedGCN': 
+            p2raw = './data/AllSet_all_raw_data/'
+        dataset = dataset_Hypergraph(name=dname,root = './data/pyg_data/hypergraph_dataset_updated/',
+                                        p2raw = p2raw)
+        data = dataset.data
+        # print(data.edge_index)
+        args.num_features = dataset.num_features
+        args.num_classes = dataset.num_classes
+
+        if not hasattr(data, 'n_x'):
+            data.n_x = torch.tensor([data.x.shape[0]])
+        if not hasattr(data, 'num_hyperedges'):
+            # note that we assume the he_id == consecutive.
+            data.num_hyperedges = torch.tensor(
+                [data.edge_index[0].max()-data.n_x[0]+1])
+
+        data = ExtractV2E(data)
+        if args.add_self_loop:
+            data = Add_Self_Loops(data)
+        # 联邦学习根据客户端划分节点
+        split_idx = label_dirichlet_partition(
+            data.y, len(data.y), args.num_classes, args.n_client, args.iid_beta, device
+        )
+        # 随机划分训练集测试集验证集
+        split_idx = rand_train_test_idx(split_idx, train_prop=args.train_prop, valid_prop=args.valid_prop)
+        if not args.local:
+            split_idx = get_in_comm_indexes(data, split_idx, args.safty)
+        x_clients = [data.x[split_idx[i]["total"]] for i in range(len(split_idx))]
+        y_clients = [data.y[split_idx[i]["total"]] for i in range(len(split_idx))]        
+        
+        # 根据节点id计算关系矩阵
+        H_clients = ConstructH(data, split_idx)
+        # 计算拉普拉斯矩阵
+        G_clients = generate_G_from_H(H_clients)
+        
+        return split_idx, G_clients, x_clients, y_clients
+    elif args.method in simple_graph_method: 
         # 读取简单图数据集
-        if args.dname in existing_dataset:
-            features, adj, labels, idx_train, idx_val, idx_test = load_simple_graph(args.dataset)
-            args.num_classes = labels.max().item() + 1
-            row, col, edge_attr = adj.coo()
-            edge_index = torch.stack([row, col], dim=0)    
+        features, adj, labels, idx_train, idx_val, idx_test = load_simple_graph(args.dname)
+        args.num_classes = labels.max().item() + 1
+        row, col, _ = adj.coo()
+        edge_index = torch.stack([row, col], dim=0)
+        edge_index = edge_index.to(device)
+        split_data_indexes = label_dirichlet_partition(
+            labels, len(labels), args.num_classes, args.n_client, args.iid_beta, device
+        )
+        
+        x_clients = [features[split_idx[i]["total"]] for i in range(len(split_idx))]
+        y_clients = [labels[split_idx[i]["total"]] for i in range(len(split_idx))]
+        split_idx, edge_indexes_clients = get_simple_in_comm_indexes(
+            edge_index, split_data_indexes, args.n_client, 1, idx_train, idx_val, idx_test,
+        )        
+        return split_idx, edge_indexes_clients, x_clients, y_clients
     else:
         raise RuntimeError("Unknown method!")     
-    
-    return data
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -91,21 +117,14 @@ if __name__ == '__main__':
     # client num
     parser.add_argument('--n_client', default=5, type=int)
     # global round
-    parser.add_argument('--global_rounds', default=100, type=int)
+    parser.add_argument('--global_rounds', default=200, type=int)
     # data distribution
     parser.add_argument("-iid_b", "--iid_beta", default=10000, type=float)
-    
+    # act as safty mode
+    parser.add_argument('--safty', action='store_true')
     #     Use the line below for .py file
     args = parser.parse_args()
     
-    
-    # # Part 1: Load data
-    
-    ### Load and preprocess data ###
-    np.random.seed(42)
-    torch.manual_seed(42)
-    data = load_dataset(args)
-        
     # put things to device
     if args.cuda in [0, 1]:
         device = torch.device('cuda:'+str(args.cuda)
@@ -113,35 +132,28 @@ if __name__ == '__main__':
     else:
         device = torch.device('cpu')
     
-    # # Part 3: Main. Training + Evaluation
+    ### Load and preprocess data ###
+    np.random.seed(12)
+    torch.manual_seed(12)
+    
+    split_idx, HorA, x_clients, y_clients = load_dataset(args)
+
     print("Begin Train!")
     ### Training loop ###
     runtime_list = []
     for run in tqdm(range(args.runs)):
-        # 联邦学习根据客户端划分节点
-        split_idx = label_dirichlet_partition(
-            data.y, len(data.y), args.num_classes, args.n_client, args.iid_beta, device
-        )
-        # 随机划分训练集测试集验证集
-        split_idx = rand_train_test_idx(split_idx, train_prop=args.train_prop, valid_prop=args.valid_prop)
         # 根据通信范围，获取子图和子图所有节点的邻居构成的扩充图
-        if not args.local:
-            split_idx = get_in_comm_indexes(data, split_idx)
-        # 根据节点id计算关系矩阵
-        H_clients = ConstructH(data, split_idx)
-        # 计算拉普拉斯矩阵
-        G_clients = generate_G_from_H(H_clients)
         
         # 新建联邦学习客户端和服务器
         clients = [
                 Client(
-                    i,
-                    G_clients[i],
-                    data.y[split_idx[i]["total"]],
-                    data.x[split_idx[i]["total"]],
-                    split_idx[i],
-                    device,
-                    args,
+                    rank = i,
+                    G = HorA[i],
+                    features = x_clients[i],
+                    labels=y_clients[i],
+                    idx=split_idx[i],
+                    device=device,
+                    args=args,                    
                 )
                 for i in range(args.n_client)
             ]
@@ -177,13 +189,24 @@ if __name__ == '__main__':
         average_val_accuracy = np.average(
             [row[5] for row in results], weights=val_data_weights, axis=0
         )
-        print("average_train_loss", average_train_loss, "\n",
-              "average_train_accuracy", average_train_accuracy,  "\n",
-              "average_test_loss", average_test_loss,  "\n",
-              "average_test_accuracy", average_test_accuracy,  "\n",
-              "average_val_loss", average_val_loss,  "\n",
-              "average_val_accuracy", average_val_accuracy)
 
+        test_results = np.array([client.local_test() for client in server.clients])
+        val_results = np.array([client.local_val() for client in server.clients])
 
-    
+        average_final_val_loss = np.average(
+            [row[0] for row in val_results], weights=test_data_weights, axis=0
+        )
+        average_final_val_accuracy = np.average(
+            [row[1] for row in val_results], weights=test_data_weights, axis=0
+        )
+
+        average_final_test_loss = np.average(
+            [row[0] for row in test_results], weights=val_data_weights, axis=0
+        )
+        average_final_test_accuracy = np.average(
+            [row[1] for row in test_results], weights=val_data_weights, axis=0
+        )
+
+        print("val", average_final_val_loss, average_final_val_accuracy)
+        print("test", average_final_test_loss, average_final_test_accuracy)    
   
