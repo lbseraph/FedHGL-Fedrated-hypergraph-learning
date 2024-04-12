@@ -377,11 +377,9 @@ def load_simple_graph(dataset_str: str):
         labels[test_idx_reorder, :] = labels[test_idx_range, :]
 
         idx_test = torch.LongTensor(test_idx_range.tolist())
-        print("???", idx_test)
         idx_train = torch.LongTensor(range(len(y)))
-        print(idx_train)
         idx_val = torch.LongTensor(range(len(y), len(y) + 500))
-        print(idx_val)
+        # print(idx_test)
         # features = normalize(features)
         # adj = normalize(adj)    # no normalize adj here, normalize it in the training process
 
@@ -484,11 +482,10 @@ def get_simple_in_comm_indexes(
         edge_indexes_clients.append(current_edge_index)
         split_idx_list.append({
             'total' : communicate_indexes[i],
-            'train': intersect1d(split_data_indexes[i], idx_train),
-            'val': intersect1d(split_data_indexes[i], idx_val),
-            'test': intersect1d(split_data_indexes[i], idx_test),  
+            'train': torch.searchsorted(communicate_indexes[i], intersect1d(split_data_indexes[i], idx_train)).clone(),
+            'val': torch.searchsorted(communicate_indexes[i], intersect1d(split_data_indexes[i], idx_val)).clone(),
+            'test': torch.searchsorted(communicate_indexes[i], intersect1d(split_data_indexes[i], idx_test)).clone(),
         })
-        
     return split_idx_list, edge_indexes_clients
     
 def intersect1d(t1: torch.Tensor, t2: torch.Tensor) -> torch.Tensor:

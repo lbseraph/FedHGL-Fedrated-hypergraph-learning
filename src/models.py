@@ -6,9 +6,11 @@
 #
 # Distributed under terms of the MIT license.
 
+import torch
 import torch.nn as nn
-from layers import *
+import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, SAGEConv
+
 
 class GCN(nn.Module):
     def __init__(
@@ -25,7 +27,6 @@ class GCN(nn.Module):
         NumLayers: (int) - Number of GCN layers in the network.
         """
         super(GCN, self).__init__()
-
         self.convs = torch.nn.ModuleList()
         self.convs.append(GCNConv(nfeat, nhid, normalize=True, cached=True))
         for _ in range(NumLayers - 2):
@@ -59,7 +60,9 @@ class GCN(nn.Module):
             x = F.relu(x)
             x = F.dropout(x, p=self.dropout, training=self.training)
         x = self.convs[-1](x, adj_t)
-        return torch.log_softmax(x, dim=-1)
+        r = torch.log_softmax(x, dim=-1)
+        return r
+
 
 # class HGNN(nn.Module):
 #     def __init__(self, in_ch, n_class, n_hid, dropout=0.5, layer_num=2):
@@ -86,6 +89,7 @@ class HGNN(nn.Module):
         self.layer_num = layer_num
         self.n_class = n_class
         self.in_ch = in_ch
+        
     def reset_parameters(self):
         self.hgc.reset_parameters()
 #         self.hgc2.reset_parameters()
@@ -94,5 +98,17 @@ class HGNN(nn.Module):
         for _ in range(self.layer_num - 1):
             x = G.matmul(x)
         x = self.hgc(x, G)
-        # print(x.shape, data.x.shape, self.n_class, self.in_ch)
+        return x
+
+class HGNN_conv(nn.Module):
+    def __init__(self, in_ft, out_ft, bias=True):
+        super(HGNN_conv, self).__init__()
+        self.lin = nn.Linear(in_ft, out_ft, bias=bias)
+
+    def reset_parameters(self):
+        self.lin.reset_parameters()
+
+    def forward(self, x, G):
+        x = self.lin(x)
+        x = torch.matmul(G, x)
         return x

@@ -30,7 +30,7 @@ class Client:
                 nhid=args.hiddens_num,
                 nclass=args.num_classes,
                 dropout=0.5,
-                NumLayers=args.num_layers,
+                NumLayers=args.layers_num,
             )
         self.model = self.model.to(device)
         self.rank = rank  # rank = client ID
@@ -69,8 +69,7 @@ class Client:
         # clean cache
         torch.cuda.empty_cache()
         for iteration in range(self.local_step):
-            self.model.train()
-
+            
             loss_train, acc_train = train(
                 iteration,
                 self.model,
@@ -87,7 +86,6 @@ class Client:
             loss_test, acc_test = self.local_test()
             self.test_losses.append(loss_test)
             self.test_accs.append(acc_test)
-
             loss_val, acc_val = self.local_val()
             self.val_losses.append(loss_val)
             self.val_accs.append(acc_val)
@@ -140,35 +138,6 @@ def accuracy(output: torch.Tensor, labels: torch.Tensor):
     return correct / len(labels)
 
 
-def test(
-    model: torch.nn.Module,
-    criterion: torch.nn.CrossEntropyLoss,
-    features: torch.Tensor,
-    G: torch.Tensor,
-    labels: torch.Tensor,
-    idx_test: torch.Tensor,
-):
-    """
-    This function tests the model and calculates the loss and accuracy
-
-    Arguments:
-    model: (torch.nn.Module) - Specific model passed
-    features: (torch.Tensor) - Tensor representing the input features
-    G: (torch.Tensor) - Laplacian matrix
-    labels: (torch.Tensor) - Contains the ground truth labels for the data.
-    idx_test: (torch.Tensor) - Indices specifying the test data points
-
-    Returns:
-    The loss and accuracy of the model
-
-    """
-    model.eval()
-    output = model(features, G)
-    loss_test = criterion(output[idx_test], labels[idx_test])
-    acc_test = accuracy(output[idx_test], labels[idx_test])
-
-    return loss_test.item(), acc_test.item()  # , f1_test, auc_test
-
 
 def train(
     epoch: int,
@@ -208,3 +177,31 @@ def train(
     optimizer.zero_grad()
 
     return loss_train.item(), acc_train.item()
+
+def test(
+    model: torch.nn.Module,
+    criterion: torch.nn.CrossEntropyLoss,
+    features: torch.Tensor,
+    G: torch.Tensor,
+    labels: torch.Tensor,
+    idx_test: torch.Tensor,
+):
+    """
+    This function tests the model and calculates the loss and accuracy
+
+    Arguments:
+    model: (torch.nn.Module) - Specific model passed
+    features: (torch.Tensor) - Tensor representing the input features
+    G: (torch.Tensor) - Laplacian matrix
+    labels: (torch.Tensor) - Contains the ground truth labels for the data.
+    idx_test: (torch.Tensor) - Indices specifying the test data points
+
+    Returns:
+    The loss and accuracy of the model
+
+    """
+    model.eval()
+    output = model(features, G)
+    loss_test = criterion(output[idx_test], labels[idx_test])
+    acc_test = accuracy(output[idx_test], labels[idx_test])
+    return loss_test.item(), acc_test.item()  # , f1_test, auc_test

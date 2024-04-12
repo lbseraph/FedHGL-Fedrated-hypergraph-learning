@@ -1,2 +1,7 @@
 data/*
 src/__pycache__/*
+.vscode/launch.json
+src/__pycache__/models.cpython-39.pyc
+src/__pycache__/preprocessing.cpython-39.pyc
+src/__pycache__/server.cpython-39.pyc
+src/__pycache__/client.cpython-39.pyc

@@ -13,7 +13,6 @@ import torch.nn.functional as F
 
 from tqdm import tqdm
 
-from layers import *
 from models import *
 from preprocessing import *
 from client import Client
@@ -57,6 +56,7 @@ def load_dataset(args):
             data.y, len(data.y), args.num_classes, args.n_client, args.iid_beta, device
         )
         # 随机划分训练集测试集验证集
+
         split_idx = rand_train_test_idx(split_idx, train_prop=args.train_prop, valid_prop=args.valid_prop)
         if not args.local:
             split_idx = get_in_comm_indexes(data, split_idx, args.safty)
@@ -67,7 +67,7 @@ def load_dataset(args):
         H_clients = ConstructH(data, split_idx)
         # 计算拉普拉斯矩阵
         G_clients = generate_G_from_H(H_clients)
-        
+        # print(args.num_features, args.num_classes)  
         return split_idx, G_clients, x_clients, y_clients
     elif args.method in simple_graph_method: 
         # 读取简单图数据集
@@ -79,15 +79,18 @@ def load_dataset(args):
         split_data_indexes = label_dirichlet_partition(
             labels, len(labels), args.num_classes, args.n_client, args.iid_beta, device
         )
-        
-        x_clients = [features[split_idx[i]["total"]] for i in range(len(split_idx))]
-        y_clients = [labels[split_idx[i]["total"]] for i in range(len(split_idx))]
+        # print(len(split_data_indexes))
         split_idx, edge_indexes_clients = get_simple_in_comm_indexes(
             edge_index, split_data_indexes, args.n_client, 1, idx_train, idx_val, idx_test,
         )        
+        args.num_features = features.shape[1]
+        args.num_classes = labels.max().item() + 1
+        x_clients = [features[split_idx[i]["total"]] for i in range(len(split_idx))]
+        y_clients = [labels[split_idx[i]["total"]] for i in range(len(split_idx))]
         return split_idx, edge_indexes_clients, x_clients, y_clients
     else:
-        raise RuntimeError("Unknown method!")     
+        raise RuntimeError("Unknown method!")  
+     
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -137,7 +140,6 @@ if __name__ == '__main__':
     torch.manual_seed(12)
     
     split_idx, HorA, x_clients, y_clients = load_dataset(args)
-
     print("Begin Train!")
     ### Training loop ###
     runtime_list = []
@@ -157,6 +159,7 @@ if __name__ == '__main__':
                 )
                 for i in range(args.n_client)
             ]
+        torch.cuda.empty_cache()
         server = Server(clients, device, args) 
         
         start_time = time.time()
