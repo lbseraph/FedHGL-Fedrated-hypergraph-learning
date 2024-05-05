@@ -26,7 +26,7 @@ def load_dataset(args):
         raise RuntimeError("Unknown dataset!")
         
     simple_graph_method = ["FedGCN", "FedSage+"]
-    hypergraph_method = ["FedHGNN"]
+    hypergraph_method = ["FedHGN"]
     if args.method in hypergraph_method:
         # 读取超图数据集
         dname = args.dname
@@ -47,10 +47,12 @@ def load_dataset(args):
             # note that we assume the he_id == consecutive.
             data.num_hyperedges = torch.tensor(
                 [data.edge_index[0].max()-data.n_x[0]+1])
-
-        data = ExtractV2E(data)
+        edge_index = data.edge_index
+        num_nodes = data.n_x
         if args.add_self_loop:
-            data = Add_Self_Loops(data)
+            data.edge_index = Add_Self_Loops(edge_index, num_nodes)
+        data = ExtractV2E(data)
+        
         # 联邦学习根据客户端划分节点
         split_idx = label_dirichlet_partition(
             data.y, len(data.y), args.num_classes, args.n_client, args.iid_beta, device
@@ -62,12 +64,12 @@ def load_dataset(args):
             split_idx = get_in_comm_indexes(data, split_idx, args.safty)
         x_clients = [data.x[split_idx[i]["total"]] for i in range(len(split_idx))]
         y_clients = [data.y[split_idx[i]["total"]] for i in range(len(split_idx))]        
-        
         # 根据节点id计算关系矩阵
         H_clients = ConstructH(data, split_idx)
+        # print(H_clients)
         # 计算拉普拉斯矩阵
         G_clients = generate_G_from_H(H_clients)
-        # print(args.num_features, args.num_classes)  
+
         return split_idx, G_clients, x_clients, y_clients
     elif args.method in simple_graph_method: 
         # 读取简单图数据集
@@ -75,6 +77,8 @@ def load_dataset(args):
         args.num_classes = labels.max().item() + 1
         row, col, _ = adj.coo()
         edge_index = torch.stack([row, col], dim=0)
+        if args.add_self_loop:
+            edge_index = Add_Self_Loops(edge_index, len(labels))
         edge_index = edge_index.to(device)
         split_data_indexes = label_dirichlet_partition(
             labels, len(labels), args.num_classes, args.n_client, args.iid_beta, device
@@ -83,6 +87,7 @@ def load_dataset(args):
         split_idx, edge_indexes_clients = get_simple_in_comm_indexes(
             edge_index, split_data_indexes, args.n_client, 1, idx_train, idx_val, idx_test,
         )        
+        
         args.num_features = features.shape[1]
         args.num_classes = labels.max().item() + 1
         x_clients = [features[split_idx[i]["total"]] for i in range(len(split_idx))]
@@ -97,7 +102,7 @@ if __name__ == '__main__':
     parser.add_argument('--train_prop', type=float, default=0.5)
     parser.add_argument('--valid_prop', type=float, default=0.25)
     parser.add_argument('--dname', default='walmart-trips-100')
-    parser.add_argument('--method', default='FedHGNN')
+    parser.add_argument('--method', default='FedHGN')
     parser.add_argument('--local_step', default=3, type=int)
     # Number of runs for each split (test fix, only shuffle train/val)
     parser.add_argument('--runs', default=10, type=int)

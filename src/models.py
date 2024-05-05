@@ -28,11 +28,13 @@ class GCN(nn.Module):
         """
         super(GCN, self).__init__()
         self.convs = torch.nn.ModuleList()
-        self.convs.append(GCNConv(nfeat, nhid, normalize=True, cached=True))
-        for _ in range(NumLayers - 2):
-            self.convs.append(GCNConv(nhid, nhid, normalize=True, cached=True))
-        self.convs.append(GCNConv(nhid, nclass, normalize=True, cached=True))
-
+        if NumLayers == 1:
+            self.convs.append(GCNConv(nfeat, nclass, normalize=True, cached=True))
+        else:      
+            self.convs.append(GCNConv(nfeat, nhid, normalize=True, cached=True))
+            for _ in range(NumLayers - 2):
+                self.convs.append(GCNConv(nhid, nhid, normalize=True, cached=True))
+            self.convs.append(GCNConv(nhid, nclass, normalize=True, cached=True))
         self.dropout = dropout
 
     def reset_parameters(self):
@@ -55,6 +57,7 @@ class GCN(nn.Module):
         The output of the forward pass, a PyTorch tensor
 
         """
+        # print(x)
         for conv in self.convs[:-1]:
             x = conv(x, adj_t)
             x = F.relu(x)
@@ -83,32 +86,39 @@ class GCN(nn.Module):
 #         return x
 
 class HGNN(nn.Module):
-    def __init__(self, in_ch, n_class, n_hid, dropout=0.5, layer_num=2):
+    def __init__(self, in_ch, n_class, n_hid, layer_num=2, dropout=0.5):
         super(HGNN, self).__init__()
-        self.hgc = HGNN_conv(in_ch, n_class)
+        self.hgcs = torch.nn.ModuleList()
+        if layer_num == 1:
+            self.hgcs.append(HGNN_conv(in_ch, n_class))
+        else:
+            self.hgcs.append(HGNN_conv(in_ch, n_hid))
+            for _ in range(layer_num - 2):
+                self.hgcs.append(HGNN_conv(n_hid, n_hid))
+            self.hgcs.append(HGNN_conv(n_hid, n_class))
         self.layer_num = layer_num
-        self.n_class = n_class
-        self.in_ch = in_ch
+        self.dropout = dropout
         
     def reset_parameters(self):
-        self.hgc.reset_parameters()
-#         self.hgc2.reset_parameters()
+        for hgc in self.hgcs:
+            hgc.reset_parameters()
 
     def forward(self, x, G):
-        for _ in range(self.layer_num - 1):
-            x = G.matmul(x)
-        x = self.hgc(x, G)
+        for hgc in self.hgcs:
+            x = hgc(x, G)
+        x = F.relu(x)
+        # r = torch.log_softmax(x, dim=-1)
         return x
 
 class HGNN_conv(nn.Module):
-    def __init__(self, in_ft, out_ft, bias=True):
+    def __init__(self, in_ft, out_ft):
         super(HGNN_conv, self).__init__()
-        self.lin = nn.Linear(in_ft, out_ft, bias=bias)
+        self.lin = nn.Linear(in_ft, out_ft, bias=False)
 
     def reset_parameters(self):
         self.lin.reset_parameters()
 
     def forward(self, x, G):
-        x = self.lin(x)
         x = torch.matmul(G, x)
+        x = self.lin(x)
         return x

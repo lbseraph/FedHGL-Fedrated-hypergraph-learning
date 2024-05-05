@@ -21,11 +21,33 @@ import scipy.sparse as sp
 from collections import Counter
 import torch_geometric
 
+def Add_Self_Loops(edge_index, num_nodes):
+    
+    # store the nodes that already have self-loops
+    skip_node_lst = []
+    mask = edge_index[0, :] == edge_index[1, :]
+
+    skip_node_lst = edge_index[0, mask]
+
+    new_edges = torch.zeros(
+        (2, num_nodes - len(skip_node_lst)), dtype=edge_index.dtype)
+
+    temp_i = 0
+    for i in range(num_nodes):
+        if i not in skip_node_lst:
+            new_edges[0][temp_i] = i
+            new_edges[1][temp_i] = i
+            temp_i += 1
+    # print(new_edges)
+    edge_index = torch.cat((edge_index, new_edges), dim=1)
+    # Sort along w.r.t. nodes
+    _, sorted_idx = torch.sort(edge_index[0])
+    edge_index = edge_index[:, sorted_idx].type(torch.LongTensor)
+    return edge_index
 
 def ExtractV2E(data):
     # Assume edge_index = [V|E;E|V]
     edge_index = data.edge_index
-
 #     First, ensure the sorting is correct (increasing along edge_index[0])
     _, sorted_idx = torch.sort(edge_index[0])
     edge_index = edge_index[:, sorted_idx].type(torch.LongTensor)
@@ -39,45 +61,6 @@ def ExtractV2E(data):
         0].min()  # cidx: [V...|cidx E...]
     data.edge_index = edge_index[:, :cidx].type(torch.LongTensor)
     # print(data.edge_index, cidx)
-    return data
-
-
-def Add_Self_Loops(data):
-    # update so we dont jump on some indices
-    # Assume edge_index = [V;E]. If not, use ExtractV2E()
-    edge_index = data.edge_index
-    num_nodes = data.n_x
-    num_hyperedges = data.num_hyperedges
-
-    if not ((data.n_x + data.num_hyperedges - 1) == data.edge_index[1].max().item()):
-        print('num_hyperedges does not match! 2')
-        return
-
-    hyperedge_appear_fre = Counter(edge_index[1].numpy())
-    # store the nodes that already have self-loops
-    skip_node_lst = []
-    for edge in hyperedge_appear_fre:
-        if hyperedge_appear_fre[edge] == 1:
-            skip_node = edge_index[0][torch.where(
-                edge_index[1] == edge)[0].item()]
-            skip_node_lst.append(skip_node.item())
-
-    new_edge_idx = edge_index[1].max() + 1
-    new_edges = torch.zeros(
-        (2, num_nodes - len(skip_node_lst)), dtype=edge_index.dtype)
-    tmp_count = 0
-    for i in range(num_nodes):
-        if i not in skip_node_lst:
-            new_edges[0][tmp_count] = i
-            new_edges[1][tmp_count] = new_edge_idx
-            new_edge_idx += 1
-            tmp_count += 1
-
-    data.totedges = num_hyperedges + num_nodes - len(skip_node_lst)
-    edge_index = torch.cat((edge_index, new_edges), dim=1)
-    # Sort along w.r.t. nodes
-    _, sorted_idx = torch.sort(edge_index[0])
-    data.edge_index = edge_index[:, sorted_idx].type(torch.LongTensor)
     return data
 
 def label_dirichlet_partition(labels, N: int, K: int, n_parties: int, beta: float, device):
@@ -372,7 +355,7 @@ def load_simple_graph(dataset_str: str):
         features = sp.vstack((allx, tx)).tolil()
         features[test_idx_reorder, :] = features[test_idx_range, :]
         adj = nx.adjacency_matrix(nx.from_dict_of_lists(graph))
-
+        # print(adj)
         labels = np.vstack((ally, ty))
         labels[test_idx_reorder, :] = labels[test_idx_range, :]
 
@@ -386,6 +369,7 @@ def load_simple_graph(dataset_str: str):
         features = torch.tensor(features.toarray()).float()
         adj = torch.tensor(adj.toarray()).float()
         adj = torch_sparse.tensor.SparseTensor.from_dense(adj)
+
         labels = torch.tensor(labels)
         labels = torch.argmax(labels, dim=1)
 

@@ -16,7 +16,7 @@ class Client:
         device: torch.device,
         args: Any,                  
     ):
-        if args.method == "FedHGNN":
+        if args.method == "FedHGN":
             self.model = HGNN(
                 in_ch = args.num_features,
                 n_class = args.num_classes,
@@ -136,8 +136,6 @@ def accuracy(output: torch.Tensor, labels: torch.Tensor):
     correct = preds.eq(labels).double()
     correct = correct.sum()
     return correct / len(labels)
-
-
 
 def train(
     epoch: int,
