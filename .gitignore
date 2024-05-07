@@ -1,7 +1,4 @@
-data/AllSet_all_raw_data
-data/pyg_data
-data/raw_data
-data/simple
+data/*
 .vscode/
-src/__pycache__
+src/__pycache__/*
 

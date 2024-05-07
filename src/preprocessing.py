@@ -225,25 +225,22 @@ def ConstructH(data, split_idxs):
         edge_index = np.array(data.edge_index)
         node_ids = np.array(split_idx["total"])
         
-        delet_hes = set()
+        delet_nodes = np.array([], dtype=int)
+        
         for node_id in edge_index[0]:
             if node_id not in node_ids:
             # 找到要删除的元素的索引
                 idx = np.where(edge_index[0] == node_id)[0]
-                # 保存要删除的超边
-                # print(edge_index[1][idx])
-                delet_hes.update(edge_index[1][idx].tolist())
-        
-        num_hyperedges = np.max(edge_index[1]) - np.min(edge_index[1]) + 1 - len(delet_hes)
+                
+                delet_nodes = np.concatenate((delet_nodes, idx))
+                # print(delet_nodes)
+        # print(delet_nodes)
+        edge_index = np.delete(edge_index, delet_nodes, 1)  
         
         # TODO 记录跨客户端超边的数量
         # print(num_hyperedges, len(delet_hes))
         
-        for he in delet_hes:
-            idx = np.where(edge_index[1] == he)[0]
-            edge_index = np.delete(edge_index, idx, 1)  
-        
-        H = np.zeros((len(node_ids), num_hyperedges))
+        H = np.zeros((len(node_ids), len(np.unique(edge_index[1]))))
         
         # print(edge_index)         
 
