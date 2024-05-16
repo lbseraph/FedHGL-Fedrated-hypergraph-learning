@@ -1,7 +1,7 @@
 from typing import Any
 
 import torch
-from models import HGNN, GCN
+from models import GCN, HGNN
 from client import Client
 
 class Server:

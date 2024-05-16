@@ -3,16 +3,20 @@ from typing import Any
 import numpy as np
 import torch
 
-from models import HGNN, GCN
+from models import GCN, HGNN
+
+# from models import HGNN, GCN
 
 class Client:
     def __init__(
         self,
         rank: int,
-        G: torch.Tensor,
+        sturcture: torch.Tensor,
         features: torch.Tensor,
         labels: torch.Tensor,
-        idx: torch.Tensor,
+        train_mask: torch.Tensor,
+        val_mask: torch.Tensor,
+        test_mask: torch.Tensor,
         device: torch.device,
         args: Any,                  
     ):
@@ -45,12 +49,15 @@ class Client:
         self.test_losses: list = []
         self.test_accs: list = []
 
-        self.G = G.to(device)
+        self.sturcture = sturcture.to(device)
         self.labels = labels.to(device)
         self.features = features.to(device)
-        self.idx_train = idx["train"].to(device)
-        self.idx_test = idx["test"].to(device)
-        self.idx_val = idx["val"].to(device)
+        self.train_mask = train_mask
+        self.val_mask = val_mask
+        self.test_mask = test_mask
+        self.idx_train = (train_mask == True).nonzero().view(-1)
+        self.idx_val = (val_mask == True).nonzero().view(-1)
+        self.idx_test = (test_mask == True).nonzero().view(-1)
 
         self.local_step = args.local_step
 
@@ -76,9 +83,9 @@ class Client:
                 self.optimizer,
                 self.criterion,
                 self.features,
-                self.G,
+                self.sturcture,
                 self.labels,
-                self.idx_train,
+                self.idx_train
             )
             self.train_losses.append(loss_train)
             self.train_accs.append(acc_train)
@@ -92,14 +99,15 @@ class Client:
 
     def local_val(self):
         local_val_loss, local_val_acc = test(
-            self.model, self.criterion, self.features, self.G, self.labels, self.idx_val
+            self.model, self.criterion, self.features, self.sturcture, self.labels, self.idx_val
         )
         return [local_val_loss, local_val_acc]
 
     def local_test(self):
         local_test_loss, local_test_acc = test(
-            self.model, self.criterion, self.features, self.G, self.labels, self.idx_test
+            self.model, self.criterion, self.features, self.sturcture, self.labels, self.idx_test
         )
+        # print(local_test_loss, local_test_acc)
         return [local_test_loss, local_test_acc]
 
     def get_params(self):
@@ -143,31 +151,13 @@ def train(
     optimizer: torch.optim.Optimizer,
     criterion: torch.nn.CrossEntropyLoss,
     features: torch.Tensor,
-    G: torch.Tensor,
+    sturcture: torch.Tensor,
     labels: torch.Tensor,
     idx_train: torch.Tensor,
-):  # Centralized or new FL
-    """
-    This function trains the model and returns the loss and accuracy
-
-    Arguments:
-    model: (torch.nn.Module) - Specific model passed
-    features: (torch.FloatTensor) - Tensor representing the input features
-    G: (torch.Tensor) - Laplacian matrix
-    labels: (torch.LongTensor) - Contains the ground truth labels for the data.
-    idx_train: (torch.LongTensor) - Indices specifying the test data points
-    epoch: (int) - specifies the number of epoch on
-    optimizer: (optimizer) - type of the optimizer used
-
-    Returns:
-    The loss and accuracy of the model
-
-    """
-
+):  
     model.train()
     optimizer.zero_grad()
-
-    output = model(features, G)
+    output = model(features, sturcture)
     loss_train = criterion(output[idx_train], labels[idx_train])
     acc_train = accuracy(output[idx_train], labels[idx_train])
     loss_train.backward()
@@ -180,7 +170,7 @@ def test(
     model: torch.nn.Module,
     criterion: torch.nn.CrossEntropyLoss,
     features: torch.Tensor,
-    G: torch.Tensor,
+    sturcture: torch.Tensor,
     labels: torch.Tensor,
     idx_test: torch.Tensor,
 ):
@@ -199,7 +189,7 @@ def test(
 
     """
     model.eval()
-    output = model(features, G)
+    output = model(features, sturcture)
     loss_test = criterion(output[idx_test], labels[idx_test])
     acc_test = accuracy(output[idx_test], labels[idx_test])
     return loss_test.item(), acc_test.item()  # , f1_test, auc_test

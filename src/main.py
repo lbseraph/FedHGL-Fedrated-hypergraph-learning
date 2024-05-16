@@ -17,93 +17,77 @@ from models import *
 from preprocessing import *
 from client import Client
 from server import Server
-from data_loader import dataset_Hypergraph
+
+from dhg import Graph, Hypergraph
+from dhg.data import Cora, Pubmed, Citeseer
+from dhg.random import set_seed
 
 def load_dataset(args):
-    existing_dataset = ['ModelNet40', 'NTU2012',
-                    'cora', 'citeseer', 'pubmed']
-    if args.dname not in existing_dataset:
-        raise RuntimeError("Unknown dataset!")
-        
+       
     simple_graph_method = ["FedGCN", "FedSage+"]
     hypergraph_method = ["FedHGN"]
-    if args.method in hypergraph_method:
-        # 读取超图数据集
-        dname = args.dname
-        if dname in ['cora', 'citeseer','pubmed']:
-            p2raw = './data/AllSet_all_raw_data/cocitation/'
-        else:
-            p2raw = './data/AllSet_all_raw_data/'
-        dataset = dataset_Hypergraph(name=dname,root = './data/pyg_data/hypergraph_dataset_updated/',
-                                        p2raw = p2raw)
-        data = dataset.data
-        # print(data.edge_index)
-        args.num_features = dataset.num_features
-        args.num_classes = dataset.num_classes
-
-        if not hasattr(data, 'n_x'):
-            data.n_x = torch.tensor([data.x.shape[0]])
-        if not hasattr(data, 'num_hyperedges'):
-            # note that we assume the he_id == consecutive.
-            data.num_hyperedges = torch.tensor(
-                [data.edge_index[0].max()-data.n_x[0]+1])
-        edge_index = data.edge_index
-        num_nodes = data.n_x
-        if args.add_self_loop:
-            data.edge_index = Add_Self_Loops(edge_index, num_nodes)
-        data = ExtractV2E(data)
+    if args.dname == "cora":
+        data = Cora() 
+    
+    args.num_features = data["dim_features"]
+    args.num_classes = data["num_classes"]
+    split_idx = label_dirichlet_partition(
+        data["labels"], data["num_vertices"], args.num_classes, args.n_client, args.iid_beta, device
+    )
+    
+    split_X = [data["features"][split_idx[i]] for i in range(args.n_client)]
+    split_Y = [data["labels"][split_idx[i]] for i in range(args.n_client)]        
+    
+    split_structrue = []
+    split_train_mask = []
+    split_val_mask = []
+    split_test_mask = []    
         
-        # 联邦学习根据客户端划分节点
-        split_idx = label_dirichlet_partition(
-            data.y, len(data.y), args.num_classes, args.n_client, args.iid_beta, device
-        )
-        # 随机划分训练集测试集验证集
+    for i in range(args.n_client):
+        
+        edge_list = data["edge_list"]
+        if args.method in hypergraph_method:
+            G = Graph(data["num_vertices"], data["edge_list"])
+            HG = Hypergraph.from_graph_kHop(G, k=1)
+            edge_list = HG.e_of_group("main")[0]
 
-        split_idx = rand_train_test_idx(split_idx, train_prop=args.train_prop, valid_prop=args.valid_prop)
+        node_num = len(split_idx[i])
+        
+        new_edge_list = extract_subgraph(edge_list, split_idx[i])
+        
+        # print("new_edge_list", new_edge_list, len(new_edge_list), len(edge_list), node_num)
+        # print(data["labels"][1972] == split_Y[i][978], args.num_features)
+
+        train_mask, test_mask, val_mask = rand_train_test_idx(node_num, args.train_prop, args.valid_prop) 
+        
         if not args.local:
-            split_idx = get_in_comm_indexes(data, split_idx, args.safty)
-        x_clients = [data.x[split_idx[i]["total"]] for i in range(len(split_idx))]
-        y_clients = [data.y[split_idx[i]["total"]] for i in range(len(split_idx))]        
-        # 根据节点id计算关系矩阵
-        H_clients = ConstructH(data, split_idx)
-        # print(H_clients)
-        # 计算拉普拉斯矩阵
-        G_clients = generate_G_from_H(H_clients)
-
-        return split_idx, G_clients, x_clients, y_clients
-    elif args.method in simple_graph_method: 
-        # 读取简单图数据集
-        features, adj, labels, idx_train, idx_val, idx_test = load_simple_graph(args.dname)
-        args.num_classes = labels.max().item() + 1
-        row, col, _ = adj.coo()
-        edge_index = torch.stack([row, col], dim=0)
-        if args.add_self_loop:
-            edge_index = Add_Self_Loops(edge_index, len(labels))
-        edge_index = edge_index.to(device)
-        split_data_indexes = label_dirichlet_partition(
-            labels, len(labels), args.num_classes, args.n_client, args.iid_beta, device
-        )
-        # print(len(split_data_indexes))
-        split_idx, edge_indexes_clients = get_simple_in_comm_indexes(
-            edge_index, split_data_indexes, args.n_client, 1, idx_train, idx_val, idx_test,
-        )        
+            new_edge_list, new_node_num, neigbors = extract_subgraph_with_neighbors(edge_list, split_idx[i])
+            split_X[i] = torch.cat([split_X[i], data["features"][neigbors]], dim=0)
+            split_Y[i] = torch.cat([split_Y[i], data["labels"][neigbors]], dim=0)
+            train_mask = torch.cat([train_mask, torch.zeros(new_node_num - node_num, dtype=torch.bool)], dim=0)
+            test_mask = torch.cat([test_mask, torch.zeros(new_node_num - node_num, dtype=torch.bool)], dim=0)
+            val_mask = torch.cat([val_mask, torch.zeros(new_node_num - node_num, dtype=torch.bool)], dim=0)
+            node_num = new_node_num
         
-        args.num_features = features.shape[1]
-        args.num_classes = labels.max().item() + 1
-        x_clients = [features[split_idx[i]["total"]] for i in range(len(split_idx))]
-        y_clients = [labels[split_idx[i]["total"]] for i in range(len(split_idx))]
-        return split_idx, edge_indexes_clients, x_clients, y_clients
-    else:
-        raise RuntimeError("Unknown method!")  
-     
-
+        # print(torch.sum(train_mask), torch.sum(val_mask), torch.sum(test_mask))
+        # exit()
+        split_train_mask.append(train_mask)
+        split_val_mask.append(val_mask)
+        split_test_mask.append(test_mask) 
+        if args.method in simple_graph_method:
+            split_structrue.append(Graph(num_v=node_num, e_list=new_edge_list, extra_selfloop=True).A)
+        elif args.method in hypergraph_method:
+            split_structrue.append(Hypergraph(num_v=node_num, e_list=new_edge_list))
+            
+    return split_X, split_Y, split_structrue, split_train_mask, split_val_mask, split_test_mask
+        
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train_prop', type=float, default=0.5)
+    parser.add_argument('--train_prop', type=float, default=0.03)
     parser.add_argument('--valid_prop', type=float, default=0.25)
-    parser.add_argument('--dname', default='walmart-trips-100')
+    parser.add_argument('--dname', default='cora')
     parser.add_argument('--method', default='FedHGN')
-    parser.add_argument('--local_step', default=3, type=int)
+    parser.add_argument('--local_step', default=5, type=int)
     # Number of runs for each split (test fix, only shuffle train/val)
     parser.add_argument('--runs', default=10, type=int)
     parser.add_argument('--cuda', default=0, choices=[-1, 0, 1], type=int)
@@ -111,7 +95,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr', default=0.001, type=float)
     parser.add_argument('--layers_num', default=2,
                         type=int)  # How many layers of encoder
-    parser.add_argument('--hiddens_num', default=64,
+    parser.add_argument('--hiddens_num', default=32,
                         type=int)  # Encoder hidden units
     parser.add_argument('--display_step', type=int, default=-1)
 
@@ -125,12 +109,11 @@ if __name__ == '__main__':
     # client num
     parser.add_argument('--n_client', default=5, type=int)
     # global round
-    parser.add_argument('--global_rounds', default=200, type=int)
+    parser.add_argument('--global_rounds', default=100, type=int)
     # data distribution
     parser.add_argument("-iid_b", "--iid_beta", default=10000, type=float)
     # act as safty mode
     parser.add_argument('--safty', action='store_true')
-    #     Use the line below for .py file
     args = parser.parse_args()
     
     # put things to device
@@ -141,10 +124,9 @@ if __name__ == '__main__':
         device = torch.device('cpu')
     
     ### Load and preprocess data ###
-    np.random.seed(12)
-    torch.manual_seed(12)
+    set_seed(2025)
+    split_X, split_Y, split_structrue, split_train_mask, split_val_mask, split_test_mask = load_dataset(args)
     
-    split_idx, HorA, x_clients, y_clients = load_dataset(args)
     print("Begin Train!")
     ### Training loop ###
     runtime_list = []
@@ -155,10 +137,12 @@ if __name__ == '__main__':
         clients = [
                 Client(
                     rank = i,
-                    G = HorA[i],
-                    features = x_clients[i],
-                    labels=y_clients[i],
-                    idx=split_idx[i],
+                    sturcture = split_structrue[i],
+                    features = split_X[i],
+                    labels=split_Y[i],
+                    train_mask=split_train_mask[i],
+                    val_mask=split_val_mask[i],
+                    test_mask=split_test_mask[i],
                     device=device,
                     args=args,                    
                 )
@@ -175,9 +159,9 @@ if __name__ == '__main__':
         
         results = np.array([clients.get_all_loss_accuray() for clients in server.clients])
 
-        train_data_weights = [len(node_ids["train"]) for node_ids in split_idx]
-        test_data_weights = [len(node_ids["test"]) for node_ids in split_idx]
-        val_data_weights = [len(node_ids["val"]) for node_ids in split_idx]
+        train_data_weights = [torch.sum(train_mask) for train_mask in split_train_mask]
+        test_data_weights = [torch.sum(test_mask) for test_mask in split_test_mask]
+        val_data_weights = [torch.sum(val_mask) for val_mask in split_val_mask]
         
         average_train_loss = np.average(
             [row[0] for row in results], weights=train_data_weights, axis=0
