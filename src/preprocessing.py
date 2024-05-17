@@ -40,7 +40,6 @@ def extract_subgraph_with_neighbors(edge_list, idx_list):
     idx_set = set(idx_list)
     included_nodes = set(idx_list)
     neighbors = set()
-    
     # 遍历所有边以找到所有邻居
     for edge in edge_list:
         if any(node in idx_set for node in edge):

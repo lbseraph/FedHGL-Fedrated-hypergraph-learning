@@ -19,23 +19,43 @@ from client import Client
 from server import Server
 
 from dhg import Graph, Hypergraph
-from dhg.data import Cora, Pubmed, Citeseer
+from dhg.data import Cora, Pubmed, Citeseer, Cooking200, MovieLens1M
 from dhg.random import set_seed
 
 def load_dataset(args):
        
     simple_graph_method = ["FedGCN", "FedSage+"]
     hypergraph_method = ["FedHGN"]
+    
+    cite_dataset = ["cora", "pubmed", "citeseer"]
+    hypergraph_dataset = ["cooking"]
+    
     if args.dname == "cora":
         data = Cora() 
+    elif args.dname == "pubmed":
+        data = Pubmed()
+    elif args.dname == "citeseer":
+        data = Citeseer()
+    elif args.dname == "cooking":
+        data = Cooking200()
+    elif args.dname == "movieLens":
+        data = MovieLens1M()
+        
     
-    args.num_features = data["dim_features"]
+    if args.dname in cite_dataset:
+        args.num_features = data["dim_features"]
+        features = data["features"]
+    elif args.dname in hypergraph_dataset:
+        features = torch.eye(data["num_vertices"])
+        args.num_features = features.shape[1]
+        
+        
     args.num_classes = data["num_classes"]
     split_idx = label_dirichlet_partition(
         data["labels"], data["num_vertices"], args.num_classes, args.n_client, args.iid_beta, device
     )
     
-    split_X = [data["features"][split_idx[i]] for i in range(args.n_client)]
+    split_X = [features[split_idx[i]] for i in range(args.n_client)]
     split_Y = [data["labels"][split_idx[i]] for i in range(args.n_client)]        
     
     split_structrue = []
@@ -45,11 +65,19 @@ def load_dataset(args):
         
     for i in range(args.n_client):
         
-        edge_list = data["edge_list"]
-        if args.method in hypergraph_method:
-            G = Graph(data["num_vertices"], data["edge_list"])
-            HG = Hypergraph.from_graph_kHop(G, k=1)
-            edge_list = HG.e_of_group("main")[0]
+        if args.dname in cite_dataset:
+            edge_list = data["edge_list"]
+            # print(data["num_vertices"])
+            if args.method in hypergraph_method:
+                G = Graph(data["num_vertices"], data["edge_list"])
+                HG = Hypergraph.from_graph_kHop(G, k=1)
+                edge_list = HG.e_of_group("main")[0]
+        elif args.dname in hypergraph_dataset:
+            edge_list = data["edge_list"]
+            if args.method in simple_graph_method:
+                HG = Hypergraph(data["num_vertices"], data["edge_list"])
+                G = Graph.from_hypergraph_clique(HG, weighted=True)
+                edge_list = G.e
 
         node_num = len(split_idx[i])
         
@@ -62,7 +90,7 @@ def load_dataset(args):
         
         if not args.local:
             new_edge_list, new_node_num, neigbors = extract_subgraph_with_neighbors(edge_list, split_idx[i])
-            split_X[i] = torch.cat([split_X[i], data["features"][neigbors]], dim=0)
+            split_X[i] = torch.cat([split_X[i], features[neigbors]], dim=0)
             split_Y[i] = torch.cat([split_Y[i], data["labels"][neigbors]], dim=0)
             train_mask = torch.cat([train_mask, torch.zeros(new_node_num - node_num, dtype=torch.bool)], dim=0)
             test_mask = torch.cat([test_mask, torch.zeros(new_node_num - node_num, dtype=torch.bool)], dim=0)
@@ -124,7 +152,7 @@ if __name__ == '__main__':
         device = torch.device('cpu')
     
     ### Load and preprocess data ###
-    set_seed(2025)
+    set_seed(2024)
     split_X, split_Y, split_structrue, split_train_mask, split_val_mask, split_test_mask = load_dataset(args)
     
     print("Begin Train!")
