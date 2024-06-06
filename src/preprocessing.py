@@ -32,6 +32,9 @@ def extract_subgraph(edge_list, idx_list):
         if all(node in old_to_new for node in edge):
             # 将旧节点编号映射到新编号
             new_edge_list.append(tuple(old_to_new[node] for node in edge))
+        # 如果只有部分节点在idx_list中，则只添加部分节点
+        elif any(node in old_to_new for node in edge):
+            new_edge_list.append(tuple(old_to_new[node] for node in edge if node in old_to_new))
     
     return new_edge_list
 
