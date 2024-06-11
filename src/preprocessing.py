@@ -22,8 +22,10 @@ from collections import Counter
 import torch_geometric
 from torch_geometric.datasets import Planetoid, ModelNet
 
+# 提取仅包含客户端自身节点的子图
 def extract_subgraph(edge_list, idx_list):
     # 创建一个映射，将idx_list中的节点映射到新的编号
+    # print(edge_list)
     old_to_new = {node: i for i, node in enumerate(idx_list)}
     new_edge_list = []  # 新图的边集
     # 遍历原图中的每条边
@@ -32,13 +34,15 @@ def extract_subgraph(edge_list, idx_list):
         if all(node in old_to_new for node in edge):
             # 将旧节点编号映射到新编号
             new_edge_list.append(tuple(old_to_new[node] for node in edge))
-        # 如果只有部分节点在idx_list中，则只添加部分节点
-        elif any(node in old_to_new for node in edge):
+        # 如果只有部分节点在idx_list中，则只添加部分节点(剩余节点大于等于2)
+        elif sum(node in old_to_new for node in edge) >= 2:
             new_edge_list.append(tuple(old_to_new[node] for node in edge if node in old_to_new))
     
     return new_edge_list
 
+# 提取包含包含客户端自身节点，加上客户端边界节点邻居节点的子图
 def extract_subgraph_with_neighbors(edge_list, idx_list):
+
     # 将idx_list转换为集合，以便快速检查元素
     idx_set = set(idx_list)
     included_nodes = set(idx_list)
@@ -60,7 +64,6 @@ def extract_subgraph_with_neighbors(edge_list, idx_list):
     for edge in edge_list:
         if all(node in included_nodes for node in edge):
             new_edge_list.append(tuple(old_to_new[node] for node in edge))
-    
     return new_edge_list, len(included_nodes), list(neighbors)
 
 def label_dirichlet_partition(labels, N: int, K: int, n_parties: int, beta: float, device):
