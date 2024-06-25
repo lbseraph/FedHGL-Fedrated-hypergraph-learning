@@ -10,7 +10,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, SAGEConv
-from dhg.structure.hypergraphs import Hypergraph
 
 class GCN(nn.Module):
     def __init__(
@@ -67,6 +66,57 @@ class GCN(nn.Module):
         
         return x
 
+class SAGE(nn.Module):
+    def __init__(
+        self, nfeat: int, nhid: int, nclass: int, dropout: float, NumLayers: int
+    ):
+        """
+        This constructor method initializes the Graph Sage model
+
+        Arguments:
+        nfeat: (int) - Number of input features
+        nhid: (int) - Number of hidden features in the hidden layers of the network
+        nclass: (int) - Number of output classes
+        dropout: (float) - Dropout probability
+        NumLayers: (int) - Number of Graph Sage layers in the network
+        """
+        super(SAGE, self).__init__()
+
+        self.convs = torch.nn.ModuleList()
+        self.convs.append(SAGEConv(nfeat, nhid))
+        for _ in range(NumLayers - 2):
+            self.convs.append(SAGEConv(nhid, nhid))
+        self.convs.append(SAGEConv(nhid, nclass))
+
+        self.dropout = dropout
+
+    def reset_parameters(self):
+        """
+        This function is available to cater to weight initialization requirements as necessary.
+        """
+        for conv in self.convs:
+            conv.reset_parameters()
+        return None
+
+    def forward(self, x: torch.Tensor, adj_t: torch.Tensor):
+        """
+        This function represents the forward pass computation of a GCN
+
+        Arguments:
+        x: (torch.Tensor) - Input feature tensor for the graph nodes
+        adj_t: (SparseTensor) - Adjacency matrix of the graph
+
+        Returns:
+        The output of the forward pass, a PyTorch tensor
+
+        """
+        for conv in self.convs[:-1]:
+            x = conv(x, adj_t)
+            x = F.relu(x)
+            x = F.dropout(x, p=self.dropout, training=self.training)
+        x = self.convs[-1](x, adj_t)
+        return torch.log_softmax(x, dim=-1)
+
 class HGNN(nn.Module):
     def __init__(self, in_ch, n_class, n_hid, layer_num=2, dropout=0.5):
         super(HGNN, self).__init__()
@@ -78,6 +128,7 @@ class HGNN(nn.Module):
             for _ in range(layer_num - 2):
                 self.hgcs.append(HGNN_conv(n_hid, n_hid))
             self.hgcs.append(HGNN_conv(n_hid, n_class))
+        self.act = nn.ReLU(inplace=True)
         self.layer_num = layer_num
         self.dropout = dropout
         
@@ -88,6 +139,7 @@ class HGNN(nn.Module):
     def forward(self, x, G):
         for hgc in self.hgcs:
             x = hgc(x, G)
+        x = self.act(x)
         # x = F.dropout(x, p=self.dropout, training=self.training)
         # r = torch.log_softmax(x, dim=-1)
         return x
@@ -100,7 +152,7 @@ class HGNN_conv(nn.Module):
     def reset_parameters(self):
         self.lin.reset_parameters()
 
-    def forward(self, X, hg: Hypergraph):
-        X = hg.smoothing_with_HGNN(X)
+    def forward(self, X, _hg):
+        # X = hg.smoothing_with_HGNN(X) # No need to use HGNN smoothing because of pre-training
         X = self.lin(X)
         return X

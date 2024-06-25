@@ -3,7 +3,7 @@ from typing import Any
 import numpy as np
 import torch
 
-from models import GCN, HGNN
+from models import GCN, HGNN, SAGE
 
 # from models import HGNN, GCN
 
@@ -11,7 +11,7 @@ class Client:
     def __init__(
         self,
         rank: int,
-        sturcture: torch.Tensor,
+        structure: torch.Tensor,
         features: torch.Tensor,
         labels: torch.Tensor,
         train_mask: torch.Tensor,
@@ -26,7 +26,7 @@ class Client:
                 n_class = args.num_classes,
                 n_hid = args.hiddens_num,
                 dropout=0.5, 
-                layer_num=args.layers_num,
+                layer_num=args.num_layers,
             )
         elif args.method == "FedGCN":
             self.model = GCN(
@@ -34,9 +34,19 @@ class Client:
                 nhid=args.hiddens_num,
                 nclass=args.num_classes,
                 dropout=0.5,
-                NumLayers=args.layers_num,
+                NumLayers=args.num_layers,
             )
+        elif args.method == "FedSage":
+            self.model = SAGE(
+                nfeat=args.num_features,
+                nhid=args.hiddens_num,
+                nclass=args.num_classes,
+                dropout=0.5,
+                NumLayers=args.num_layers,
+            )
+        
         self.model = self.model.to(device)
+
         self.rank = rank  # rank = client ID
         self.device = device
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=args.lr, weight_decay=5e-4)
@@ -48,8 +58,8 @@ class Client:
         self.val_accs: list = []
         self.test_losses: list = []
         self.test_accs: list = []
-
-        self.sturcture = sturcture.to(device)
+        self.structure = structure
+        self.structure = self.structure.to(device)
         self.labels = labels.to(device)
         self.features = features.to(device)
         self.train_mask = train_mask
@@ -83,7 +93,7 @@ class Client:
                 self.optimizer,
                 self.criterion,
                 self.features,
-                self.sturcture,
+                self.structure,
                 self.labels,
                 self.idx_train
             )
@@ -99,13 +109,13 @@ class Client:
 
     def local_val(self):
         local_val_loss, local_val_acc = test(
-            self.model, self.criterion, self.features, self.sturcture, self.labels, self.idx_val
+            self.model, self.criterion, self.features, self.structure, self.labels, self.idx_val
         )
         return [local_val_loss, local_val_acc]
 
     def local_test(self):
         local_test_loss, local_test_acc = test(
-            self.model, self.criterion, self.features, self.sturcture, self.labels, self.idx_test
+            self.model, self.criterion, self.features, self.structure, self.labels, self.idx_test
         )
         # print(local_test_loss, local_test_acc)
         return [local_test_loss, local_test_acc]
@@ -114,7 +124,7 @@ class Client:
         self.optimizer.zero_grad(set_to_none=True)
         return self.model.parameters()
 
-    def get_all_loss_accuray(self):
+    def get_all_loss_accuracy(self):
         return [
             np.array(self.train_losses),
             np.array(self.train_accs),
@@ -151,13 +161,13 @@ def train(
     optimizer: torch.optim.Optimizer,
     criterion: torch.nn.CrossEntropyLoss,
     features: torch.Tensor,
-    sturcture: torch.Tensor,
+    structure: torch.Tensor,
     labels: torch.Tensor,
     idx_train: torch.Tensor,
 ):  
     model.train()
     optimizer.zero_grad()
-    output = model(features, sturcture)
+    output = model(features, structure)
     loss_train = criterion(output[idx_train], labels[idx_train])
     acc_train = accuracy(output[idx_train], labels[idx_train])
     loss_train.backward()
@@ -170,7 +180,7 @@ def test(
     model: torch.nn.Module,
     criterion: torch.nn.CrossEntropyLoss,
     features: torch.Tensor,
-    sturcture: torch.Tensor,
+    structure: torch.Tensor,
     labels: torch.Tensor,
     idx_test: torch.Tensor,
 ):
@@ -189,7 +199,7 @@ def test(
 
     """
     model.eval()
-    output = model(features, sturcture)
+    output = model(features, structure)
     loss_test = criterion(output[idx_test], labels[idx_test])
     acc_test = accuracy(output[idx_test], labels[idx_test])
     return loss_test.item(), acc_test.item()  # , f1_test, auc_test

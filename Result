@@ -1,12 +1,3 @@
-数据集：
-解压至data文件夹
-
-
-错误：
-:\actions-runner\_work\pytorch\pytorch\builder\windows\pytorch\aten\src\ATen\native\cuda\ScatterGatherKernel.cu:145: block: [16,0,0], thread: [0,0,0] Assertion `idx_dim >= 0 && idx_dim < index_size && "index out of bounds"` failed.
-邻接矩阵超范围
-
-运行：
 [cora]
 python ./src/main.py --dname cora --num_layers 2 --num_neighbor 1 --n_client 5 --add_self_loop --method FedHGN --train_prop 0.05
 Final Test Accuracy:  0.8167950922443661 0.00470751775694162
@@ -33,9 +24,10 @@ Final Test Accuracy:  0.638090498249259 0.00857624212854481
 python ./src/main.py --dname citeseer --num_layers 2 --num_neighbor 1 --n_client 5 --add_self_loop --method FedSage --train_prop 0.03
 Final Test Accuracy:  0.6554074814189331 0.009159190420282312
 
-[cooking200]
-python ./src/main.py --dname cooking --num_layers 2 --num_neighbor 1 --n_client 5 --add_self_loop --method FedHGN --train_prop 0.5 --valid_prop 0.25 --global_rounds 200
-Final Test Accuracy:  0.47600016783352617 0.0004324413471549728
+[pubmed]
+python ./src/main.py --dname pubmed --num_layers 2 --num_neighbor 1 --n_client 5 --add_self_loop --method FedHGN --train_prop 0.005
+Final Test Accuracy:  0.7731425541616026 0.0019621301683489826
 
-python ./src/main.py --dname cooking --num_layers 2 --num_neighbor 2 --n_client 1 --add_self_loop --method FedGCN --train_prop 0.5 --valid_prop 0.25 --global_rounds 200
-Final Test Accuracy:  0.36102702702702705 0.018518464518493885
+python ./src/main.py --dname pubmed --num_layers 2 --num_neighbor 1 --n_client 5 --add_self_loop --method FedGCN --train_prop 0.005
+Final Test Accuracy:  0.7776824729300005 0.004873468950950718
+
