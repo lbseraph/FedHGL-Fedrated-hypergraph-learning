@@ -7,10 +7,10 @@ python ./src/main.py --dname cora --num_layers 2 --num_neighbor 1 --n_client 5  
 Final Test Accuracy:  0.7471758879131672 0.006595549143085503
 
 python ./src/main.py --dname cora --num_layers 2 --num_neighbor 2 --n_client 5  --method FedGCN --train_prop 0.05
-Final Test Accuracy:  0.7495780340253774 0.005343456093039333
+Final Test Accuracy:  0.7493933434627206 0.009891226318574742
 
 python ./src/main.py --dname cora --num_layers 2 --num_neighbor 1 --n_client 5  --method FedSage --train_prop 0.05
-
+Final Test Accuracy:  0.7027858647101392 0.008999732054759759
 
 (c 3)
 python ./src/main.py --dname cora --num_layers 2 --num_neighbor 1 --n_client 3 --method FedHGN --train_prop 0.05
