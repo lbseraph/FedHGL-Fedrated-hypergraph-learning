@@ -100,7 +100,7 @@ class Client:
 
         for iteration in range(self.local_step):
             
-            print("client", self.rank, current_global_round, torch.cuda.memory_allocated(), torch.cuda.memory_cached())
+            # print("client", self.rank, current_global_round, torch.cuda.memory_allocated(), torch.cuda.memory_cached())
             # clean cache
             torch.cuda.empty_cache()
             loss_train, acc_train = train(

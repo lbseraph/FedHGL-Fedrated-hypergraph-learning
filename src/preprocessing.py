@@ -96,12 +96,11 @@ def load_dataset(device, args):
                     node_num = node_num + len(neighbors)
                     split_X[i] = torch.cat([split_X[i], features[neighbors]], dim=0)
                     split_Y[i] = torch.cat([split_Y[i], data["labels"][neighbors]], dim=0)
-
+                
                 if args.method == "FedSage":
                     G_noise = np.random.normal(loc=0, scale = 0.1, size=features[neighbors].shape).astype(np.float32)
                     features[neighbors] += G_noise
-
-            split_structure.append(Graph(num_v=node_num, e_list=new_edge_list, extra_selfloop=True))
+                split_structure.append(Graph(num_v=node_num, e_list=new_edge_list).A)
 
         elif args.method == "FedHGN":
             new_edge_list = extract_subgraph(edge_list, split_idx[i])

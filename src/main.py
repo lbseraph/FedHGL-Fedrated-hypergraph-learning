@@ -65,7 +65,7 @@ if __name__ == '__main__':
         device = torch.device('cpu')
     
     ### Load and preprocess data ###
-    set_seed(2025)
+    set_seed(2024)
     split_X, split_Y, split_structure, split_train_mask, split_val_mask, split_test_mask = load_dataset(device, args)
     
     print("Begin Train!")
@@ -96,7 +96,7 @@ if __name__ == '__main__':
         start_time = time.time()
         for i in range(args.global_rounds):
             server.train(i)
-            print("round", i, torch.cuda.memory_allocated(), torch.cuda.memory_cached())
+            # print("round", i, torch.cuda.memory_allocated(), torch.cuda.memory_cached())
         end_time = time.time()
         runtime_list.append(end_time - start_time)
         

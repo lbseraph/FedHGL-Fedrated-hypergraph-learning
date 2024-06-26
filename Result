@@ -1,15 +1,15 @@
 [cora]
 (c 5)
-python ./src/main.py --dname cora --num_layers 2 --num_neighbor 1 --n_client 5 --add_self_loop --method FedHGN --train_prop 0.05
-Final Test Accuracy:  0.8167950922443661 0.00470751775694162
+python ./src/main.py --dname cora --num_layers 2 --num_neighbor 1 --n_client 5  --method FedHGN --train_prop 0.05
+Final Test Accuracy:  0.7659300858854622 0.009949249727752069
 
-python ./src/main.py --dname cora --num_layers 2 --num_neighbor 1 --n_client 5 --add_self_loop --method FedGCN --train_prop 0.05
+python ./src/main.py --dname cora --num_layers 2 --num_neighbor 1 --n_client 5  --method FedGCN --train_prop 0.05
+Final Test Accuracy:  0.7471758879131672 0.006595549143085503
 
+python ./src/main.py --dname cora --num_layers 2 --num_neighbor 2 --n_client 5  --method FedGCN --train_prop 0.05
+Final Test Accuracy:  0.7495780340253774 0.005343456093039333
 
-python ./src/main.py --dname cora --num_layers 2 --num_neighbor 2 --n_client 5 --add_self_loop --method FedGCN --train_prop 0.05
-
-
-python ./src/main.py --dname cora --num_layers 2 --num_neighbor 1 --n_client 5 --add_self_loop --method FedSage --train_prop 0.05
+python ./src/main.py --dname cora --num_layers 2 --num_neighbor 1 --n_client 5  --method FedSage --train_prop 0.05
 
 
 (c 3)
@@ -24,28 +24,28 @@ python ./src/main.py --dname cora --num_layers 2 --num_neighbor 1 --n_client 10 
 Final Test Accuracy:  0.8081567196482018 0.003720089014356973
 
 [citeseer]
-python ./src/main.py --dname citeseer --num_layers 2 --num_neighbor 1 --n_client 5 --add_self_loop --method FedHGN --train_prop 0.03
+python ./src/main.py --dname citeseer --num_layers 2 --num_neighbor 1 --n_client 5  --method FedHGN --train_prop 0.03
 Final Test Accuracy:  0.6644490193920275 0.009108555401486224
 
-python ./src/main.py --dname citeseer --num_layers 2 --num_neighbor 1 --n_client 5 --add_self_loop --method FedGCN --train_prop 0.03
+python ./src/main.py --dname citeseer --num_layers 2 --num_neighbor 1 --n_client 5  --method FedGCN --train_prop 0.03
 
 
-python ./src/main.py --dname citeseer --num_layers 2 --num_neighbor 2 --n_client 5 --add_self_loop --method FedGCN --train_prop 0.03
+python ./src/main.py --dname citeseer --num_layers 2 --num_neighbor 2 --n_client 5  --method FedGCN --train_prop 0.03
 
 
-python ./src/main.py --dname citeseer --num_layers 2 --num_neighbor 1 --n_client 5 --add_self_loop --method FedSage --train_prop 0.03
+python ./src/main.py --dname citeseer --num_layers 2 --num_neighbor 1 --n_client 5  --method FedSage --train_prop 0.03
 
 
 [pubmed]
-python ./src/main.py --dname pubmed --num_layers 2 --num_neighbor 1 --n_client 5 --add_self_loop --method FedHGN --train_prop 0.005
+python ./src/main.py --dname pubmed --num_layers 2 --num_neighbor 1 --n_client 5  --method FedHGN --train_prop 0.005
 Final Test Accuracy:  0.7731425541616026 0.0019621301683489826
 
-python ./src/main.py --dname pubmed --num_layers 2 --num_neighbor 1 --n_client 5 --add_self_loop --method FedGCN --train_prop 0.005
+python ./src/main.py --dname pubmed --num_layers 2 --num_neighbor 1 --n_client 5  --method FedGCN --train_prop 0.005
 
 
 [cooking200]
-python ./src/main.py --dname cooking --num_layers 2 --num_neighbor 1 --n_client 5 --add_self_loop --method FedHGN --train_prop 0.5 --valid_prop 0.25 --global_rounds 200
+python ./src/main.py --dname cooking --num_layers 2 --num_neighbor 1 --n_client 5  --method FedHGN --train_prop 0.5 --valid_prop 0.25 --global_rounds 200
 Final Test Accuracy:  0.47600016783352617 0.0004324413471549728
 
-python ./src/main.py --dname cooking --num_layers 2 --num_neighbor 2 --n_client 1 --add_self_loop --method FedGCN --train_prop 0.5 --valid_prop 0.25 --global_rounds 200
+python ./src/main.py --dname cooking --num_layers 2 --num_neighbor 2 --n_client 1  --method FedGCN --train_prop 0.5 --valid_prop 0.25 --global_rounds 200
 
