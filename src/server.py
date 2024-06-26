@@ -26,6 +26,7 @@ class Server:
                 nclass=args.num_classes,
                 dropout=0.5,
                 NumLayers=args.num_layers,
+                cached=False,
             )
         elif args.method == "FedSage":
             self.model = SAGE(
@@ -46,8 +47,10 @@ class Server:
                 p.zero_()
 
     def train(self, current_global_epoch: int):
+
         for client in self.clients:
             client.train(current_global_epoch)
+            torch.cuda.empty_cache()
         
         if len(self.clients) > 1:
             self.zero_params()

@@ -60,6 +60,7 @@ if __name__ == '__main__':
     if args.cuda in [0, 1]:
         device = torch.device('cuda:'+str(args.cuda)
                               if torch.cuda.is_available() else 'cpu')
+        torch.cuda.memory._record_memory_history(max_entries=100000)
     else:
         device = torch.device('cpu')
     
@@ -73,7 +74,7 @@ if __name__ == '__main__':
     Final_test_accuracy = []
     for run in tqdm(range(args.runs)):
         # 根据通信范围，获取子图和子图所有节点的邻居构成的扩充图
-
+        
         # 新建联邦学习客户端和服务器
         clients = [
                 Client(
@@ -89,12 +90,13 @@ if __name__ == '__main__':
                 )
                 for i in range(args.n_client)
             ]
-        torch.cuda.empty_cache()
+        
         server = Server(clients, device, args) 
         
         start_time = time.time()
         for i in range(args.global_rounds):
             server.train(i)
+            print("round", i, torch.cuda.memory_allocated(), torch.cuda.memory_cached())
         end_time = time.time()
         runtime_list.append(end_time - start_time)
         
@@ -144,5 +146,10 @@ if __name__ == '__main__':
 
         print("val", average_final_val_loss, average_final_val_accuracy)
         print("test", average_final_test_loss, average_final_test_accuracy) 
+    try:
+        torch.cuda.memory._dump_snapshot(f"gpu.pickle")
+    except Exception as e:
+        print(f"Failed to capture memory snapshot {e}")
+    torch.cuda.memory._record_memory_history(enabled=None)
     print("Final Test Accuracy: ", np.mean(Final_test_accuracy), np.std(Final_test_accuracy))
   

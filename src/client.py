@@ -29,13 +29,24 @@ class Client:
                 layer_num=args.num_layers,
             )
         elif args.method == "FedGCN":
+            # if args.dname == "news":
             self.model = GCN(
                 nfeat=args.num_features,
                 nhid=args.hiddens_num,
                 nclass=args.num_classes,
                 dropout=0.5,
                 NumLayers=args.num_layers,
+                cached=True,
             )
+            # else:
+            #     self.model = GCN(
+            #         nfeat=args.num_features,
+            #         nhid=args.hiddens_num,
+            #         nclass=args.num_classes,
+            #         dropout=0.5,
+            #         NumLayers=args.num_layers,
+            #         cached=True,
+            #     )
         elif args.method == "FedSage":
             self.model = SAGE(
                 nfeat=args.num_features,
@@ -58,8 +69,11 @@ class Client:
         self.val_accs: list = []
         self.test_losses: list = []
         self.test_accs: list = []
-        self.structure = structure
-        self.structure = self.structure.to(device)
+        
+        # if args.dname == "news" and args.method == "FedGCN":
+        #     self.structure = structure
+        # else:
+        self.structure = structure.to(device)
         self.labels = labels.to(device)
         self.features = features.to(device)
         self.train_mask = train_mask
@@ -83,10 +97,12 @@ class Client:
             mp.data = mp.data + p.data
 
     def train(self, current_global_round: int) -> None:
-        # clean cache
-        torch.cuda.empty_cache()
+
         for iteration in range(self.local_step):
             
+            print("client", self.rank, current_global_round, torch.cuda.memory_allocated(), torch.cuda.memory_cached())
+            # clean cache
+            torch.cuda.empty_cache()
             loss_train, acc_train = train(
                 iteration,
                 self.model,

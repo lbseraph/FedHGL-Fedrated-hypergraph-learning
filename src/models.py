@@ -9,11 +9,11 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv, SAGEConv
+from torch_geometric.nn import SAGEConv
 
 class GCN(nn.Module):
     def __init__(
-        self, nfeat: int, nhid: int, nclass: int, dropout: float, NumLayers: int
+        self, nfeat: int, nhid: int, nclass: int, dropout: float, NumLayers: int, cached: bool
     ):
         """
         This constructor method initializes the GCN model
@@ -28,12 +28,12 @@ class GCN(nn.Module):
         super(GCN, self).__init__()
         self.convs = torch.nn.ModuleList()
         if NumLayers == 1:
-            self.convs.append(GCNConv(nfeat, nclass, normalize=True, cached=True))
+            self.convs.append(GCNConv(nfeat, nclass))
         else:      
-            self.convs.append(GCNConv(nfeat, nhid, normalize=True, cached=True))
+            self.convs.append(GCNConv(nfeat, nhid))
             for _ in range(NumLayers - 2):
-                self.convs.append(GCNConv(nhid, nhid, normalize=True, cached=True))
-            self.convs.append(GCNConv(nhid, nclass, normalize=True, cached=True))
+                self.convs.append(GCNConv(nhid, nhid))
+            self.convs.append(GCNConv(nhid, nclass))
         self.act = nn.ReLU(inplace=True)
         self.drop = nn.Dropout(dropout)
 
@@ -57,6 +57,7 @@ class GCN(nn.Module):
         The output of the forward pass, a PyTorch tensor
 
         """
+
         for conv in self.convs[:-1]:
             x = conv(x, adj_t)
             x = self.act(x)
@@ -122,12 +123,12 @@ class HGNN(nn.Module):
         super(HGNN, self).__init__()
         self.hgcs = torch.nn.ModuleList()
         if layer_num == 1:
-            self.hgcs.append(HGNN_conv(in_ch, n_class))
+            self.hgcs.append(HGNNConv(in_ch, n_class))
         else:
-            self.hgcs.append(HGNN_conv(in_ch, n_hid))
+            self.hgcs.append(HGNNConv(in_ch, n_hid))
             for _ in range(layer_num - 2):
-                self.hgcs.append(HGNN_conv(n_hid, n_hid))
-            self.hgcs.append(HGNN_conv(n_hid, n_class))
+                self.hgcs.append(HGNNConv(n_hid, n_hid))
+            self.hgcs.append(HGNNConv(n_hid, n_class))
         self.act = nn.ReLU(inplace=True)
         self.layer_num = layer_num
         self.dropout = dropout
@@ -144,9 +145,9 @@ class HGNN(nn.Module):
         # r = torch.log_softmax(x, dim=-1)
         return x
 
-class HGNN_conv(nn.Module):
+class HGNNConv(nn.Module):
     def __init__(self, in_ft, out_ft):
-        super(HGNN_conv, self).__init__()
+        super(HGNNConv, self).__init__()
         self.lin = nn.Linear(in_ft, out_ft, bias=False)
 
     def reset_parameters(self):
@@ -154,5 +155,18 @@ class HGNN_conv(nn.Module):
 
     def forward(self, X, _hg):
         # X = hg.smoothing_with_HGNN(X) # No need to use HGNN smoothing because of pre-training
+        X = self.lin(X)
+        return X
+    
+class GCNConv(nn.Module):
+    def __init__(self, in_ft, out_ft):
+        super(GCNConv, self).__init__()
+        self.lin = nn.Linear(in_ft, out_ft, bias=False)
+
+    def reset_parameters(self):
+        self.lin.reset_parameters()
+
+    def forward(self, X, G):
+        X = G.smoothing_with_GCN(X) # No need to use HGNN smoothing because of pre-training
         X = self.lin(X)
         return X
