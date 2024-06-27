@@ -64,7 +64,7 @@ def load_dataset(device, args):
         HG = Hypergraph.from_graph_kHop(G, k=1)
         edge_list = HG.e_of_group("main")[0]
     if args.dname in hypergraph_dataset and args.method in simple_graph_method:
-        HG = Hypergraph(data["num_vertices"], data["edge_list"])
+        HG = Hypergraph(data["num_vertices"], data["edge_list"]).to(device)
         G = Graph.from_hypergraph_clique(HG, weighted=True)
         edge_list = G.e[0] 
     if args.dname in hypergraph_dataset and args.method in hypergraph_method:
@@ -100,7 +100,7 @@ def load_dataset(device, args):
                 if args.method == "FedSage":
                     G_noise = np.random.normal(loc=0, scale = 0.1, size=features[neighbors].shape).astype(np.float32)
                     features[neighbors] += G_noise
-                split_structure.append(Graph(num_v=node_num, e_list=new_edge_list).A)
+                split_structure.append(Graph(num_v=node_num, e_list=new_edge_list, device=device).A)
 
         elif args.method == "FedHGN":
             new_edge_list = extract_subgraph(edge_list, split_idx[i])
