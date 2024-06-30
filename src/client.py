@@ -67,8 +67,7 @@ class Client:
         self.train_accs: list = []
         self.val_losses: list = []
         self.val_accs: list = []
-        self.test_losses: list = []
-        self.test_accs: list = []
+        self.best_val_acc = 0
         
         # if args.dname == "news" and args.method == "FedGCN":
         #     self.structure = structure
@@ -116,12 +115,12 @@ class Client:
             self.train_losses.append(loss_train)
             self.train_accs.append(acc_train)
 
-            loss_test, acc_test = self.local_test()
-            self.test_losses.append(loss_test)
-            self.test_accs.append(acc_test)
             loss_val, acc_val = self.local_val()
             self.val_losses.append(loss_val)
             self.val_accs.append(acc_val)
+            if (acc_val > self.best_val_acc):
+                self.best_val_acc = acc_val
+                torch.save(self.model.state_dict(), f"model/{type(self.model).__name__}_client_{self.rank}.pt")
 
     def local_val(self):
         local_val_loss, local_val_acc = test(
@@ -134,7 +133,7 @@ class Client:
             self.model, self.criterion, self.features, self.structure, self.labels, self.idx_test
         )
         # print(local_test_loss, local_test_acc)
-        return [local_test_loss, local_test_acc]
+        return local_test_loss, local_test_acc
 
     def get_params(self):
         self.optimizer.zero_grad(set_to_none=True)
