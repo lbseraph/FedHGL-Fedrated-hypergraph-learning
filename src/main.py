@@ -37,8 +37,6 @@ if __name__ == '__main__':
     parser.add_argument('--hiddens_num', default=16,
                         type=int)  # Encoder hidden units
 
-    parser.add_argument('--add_self_loop', action='store_true')
-
     parser.add_argument('--num_features', default=0, type=int)  # Placeholder
     parser.add_argument('--num_classes', default=0, type=int)  # Placeholder
     # FL setting
@@ -65,7 +63,7 @@ if __name__ == '__main__':
         device = torch.device('cpu')
     
     ### Load and preprocess data ###
-    set_seed(2024)
+    set_seed(2025)
     split_X, split_Y, split_structure, split_train_mask, split_val_mask, split_test_mask = load_dataset(device, args)
     
     print("Begin Train!")

@@ -1,5 +1,18 @@
 [cora]
-(c 5)
+(K 2)
+python ./src/main.py --dname cora --num_layers 2 --num_neighbor 1 --n_client 2 --method FedHGN --train_prop 0.05
+Final Test Accuracy:  0.7909259509575758 0.00240736931098013262
+
+python ./src/main.py --dname cora --num_layers 2 --num_neighbor 1 --n_client 2 --method FedGCN --train_prop 0.05
+Final Test Accuracy:  0.7735186693482042 0.00614464809204929
+
+python ./src/main.py --dname cora --num_layers 2 --num_neighbor 2 --n_client 2 --method FedGCN --train_prop 0.05
+Final Test Accuracy:  0.7757409568286573 0.00728829162381426
+
+python ./src/main.py --dname cora --num_layers 2 --num_neighbor 1 --n_client 2 --method FedSage --train_prop 0.05
+Final Test Accuracy:  0.7751853741621455 0.007865501119870864
+
+(K 5)
 python ./src/main.py --dname cora --num_layers 2 --num_neighbor 1 --n_client 5  --method FedHGN --train_prop 0.05
 Final Test Accuracy:  0.7659300858854622 0.009949249727752069
 
@@ -12,35 +25,47 @@ Final Test Accuracy:  0.7493933434627206 0.009891226318574742
 python ./src/main.py --dname cora --num_layers 2 --num_neighbor 1 --n_client 5  --method FedSage --train_prop 0.05
 Final Test Accuracy:  0.7027858647101392 0.008999732054759759
 
-(c 3)
-python ./src/main.py --dname cora --num_layers 2 --num_neighbor 1 --n_client 3 --method FedHGN --train_prop 0.05
-Final Test Accuracy:  0.8018202179547209 0.0033898508488525592
 
-python ./src/main.py --dname cora --num_layers 2 --num_neighbor 1 --n_client 3 --method FedGCN --train_prop 0.05
-
-
-(c 10)
+(K 10)
 python ./src/main.py --dname cora --num_layers 2 --num_neighbor 1 --n_client 10 --method FedHGN --train_prop 0.05
-Final Test Accuracy:  0.8081567196482018 0.003720089014356973
+Final Test Accuracy:  0.771424614412236 0.027114693099105656
+
+python ./src/main.py --dname cora --num_layers 2 --num_neighbor 1 --n_client 10  --method FedGCN --train_prop 0.05
+Final Test Accuracy:  0.7691578065451398 0.007213828919008949
+
+python ./src/main.py --dname cora --num_layers 2 --num_neighbor 2 --n_client 10  --method FedGCN --train_prop 0.05
+Final Test Accuracy:  0.7603520389663881 0.007975290486209523
+
+python ./src/main.py --dname cora --num_layers 2 --num_neighbor 1 --n_client 10  --method FedSage --train_prop 0.05
+Final Test Accuracy:  0.7404697242517218 0.014819736772554562
 
 [citeseer]
+(K 2)
+python ./src/main.py --dname citeseer --num_layers 2 --num_neighbor 1 --n_client 2  --method FedHGN --train_prop 0.03
+Final Test Accuracy:  0.6828346639581424 0.005003271661356425
+
+python ./src/main.py --dname citeseer --num_layers 2 --num_neighbor 1 --n_client 2  --method FedGCN --train_prop 0.03
+Final Test Accuracy:  0.6774134683405845 0.009686191239661676
+
+python ./src/main.py --dname citeseer --num_layers 2 --num_neighbor 2 --n_client 2  --method FedGCN --train_prop 0.03
+Final Test Accuracy:  0.6819301971861129 0.00932687029972059
+
+
+
+(K 5)
 python ./src/main.py --dname citeseer --num_layers 2 --num_neighbor 1 --n_client 5  --method FedHGN --train_prop 0.03
 Final Test Accuracy:  0.6644490193920275 0.009108555401486224
 
 python ./src/main.py --dname citeseer --num_layers 2 --num_neighbor 1 --n_client 5  --method FedGCN --train_prop 0.03
-
+Final Test Accuracy:  0.6362893783790515 0.009243760754779557
 
 python ./src/main.py --dname citeseer --num_layers 2 --num_neighbor 2 --n_client 5  --method FedGCN --train_prop 0.03
-
+Final Test Accuracy:  0.6448713506452741 0.0077896818667549704
 
 python ./src/main.py --dname citeseer --num_layers 2 --num_neighbor 1 --n_client 5  --method FedSage --train_prop 0.03
+Final Test Accuracy:  0.6403426835057473 0.020412695020712236
 
-
-[pubmed]
-python ./src/main.py --dname pubmed --num_layers 2 --num_neighbor 1 --n_client 5  --method FedHGN --train_prop 0.005
-Final Test Accuracy:  0.7731425541616026 0.0019621301683489826
-
-python ./src/main.py --dname pubmed --num_layers 2 --num_neighbor 1 --n_client 5  --method FedGCN --train_prop 0.005
+(K 10)
 
 
 [cooking200]
@@ -49,3 +74,32 @@ Final Test Accuracy:  0.47600016783352617 0.0004324413471549728
 
 python ./src/main.py --dname cooking --num_layers 2 --num_neighbor 2 --n_client 1  --method FedGCN --train_prop 0.5 --valid_prop 0.25 --global_rounds 200
 
+
+
+[news20]
+
+(c 10)
+python ./src/main.py --dname news --num_layers 2 --num_neighbor 1 --n_client 10  --method FedGCN --train_prop 0.5 --valid_prop 0.25 --global_rounds 200
+Final Test Accuracy:  0.815175455025735 0.000581483363843046
+
+python ./src/main.py --dname news --num_layers 2 --num_neighbor 1 --n_client 10  --method FedGCN --train_prop 0.5 --valid_prop 0.25 --global_rounds 200
+Final Test Accuracy:  0.7657738663247955 0.0025262607673107464
+
+python ./src/main.py --dname news --num_layers 2 --num_neighbor 2 --n_client 10  --method FedGCN --train_prop 0.5 --valid_prop 0.25 --global_rounds 200
+Final Test Accuracy:  0.765700456618134 0.0025619861602374063
+
+python ./src/main.py --dname news --num_layers 2 --num_neighbor 1 --n_client 10  --method FedSage --train_prop 0.5 --valid_prop 0.25 --global_rounds 200
+Final Test Accuracy:  0.809513793288161 0.0011793867228513863
+
+(c 5)
+python ./src/main.py --dname news --num_layers 2 --num_neighbor 1 --n_client 5  --method FedHGN --train_prop 0.5 --valid_prop 0.25 --global_rounds 200
+Final Test Accuracy:  0.8104834085541016 0.00021900943139895613
+
+python ./src/main.py --dname news --num_layers 2 --num_neighbor 1 --n_client 5  --method FedGCN --train_prop 0.5 --valid_prop 0.25 --global_rounds 200
+Final Test Accuracy:  0.7573835761239184 0.00240701952756574
+
+python ./src/main.py --dname news --num_layers 2 --num_neighbor 2 --n_client 5  --method FedGCN --train_prop 0.5 --valid_prop 0.25 --global_rounds 200
+Final Test Accuracy:  0.7573835761239184 0.00240701952756574
+
+python ./src/main.py --dname news --num_layers 2 --num_neighbor 1 --n_client 5  --method FedSage --train_prop 0.5 --valid_prop 0.25 --global_rounds 200
+Final Test Accuracy:  0.8027215281679426 0.0019572822464950933
