@@ -22,8 +22,8 @@ from dhg.random import set_seed
         
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train_prop', type=float, default=0.1)
-    parser.add_argument('--valid_prop', type=float, default=0.1)
+    parser.add_argument('--train_prop', type=float, default=0.2)
+    parser.add_argument('--valid_prop', type=float, default=0.2)
     parser.add_argument('--dname', default='cora')
     parser.add_argument('--method', default='FedHGN')
     parser.add_argument('--local_step', default=3, type=int)
@@ -63,8 +63,8 @@ if __name__ == '__main__':
         device = torch.device('cpu')
     
     ### Load and preprocess data ###
-    set_seed(2024)
-    split_X, split_Y, split_structure, split_train_mask, split_val_mask, split_test_mask = load_dataset(device, args)
+    set_seed(2025)
+
     
     print("Begin Train!")
     ### Training loop ###
@@ -72,7 +72,7 @@ if __name__ == '__main__':
     Final_test_accuracy = []
     for run in tqdm(range(args.runs)):
         # 根据通信范围，获取子图和子图所有节点的邻居构成的扩充图
-        
+        split_X, split_Y, split_structure, split_train_mask, split_val_mask, split_test_mask = load_dataset(device, args)
         # 新建联邦学习客户端和服务器
         clients = [
                 Client(
@@ -108,13 +108,6 @@ if __name__ == '__main__':
         
         test_results = np.array([client.local_test() for client in server.clients])
 
-        # average_final_val_loss = np.average(
-        #     [row[0] for row in val_results], weights=test_data_weights, axis=0
-        # )
-        # average_final_val_accuracy = np.average(
-        #     [row[1] for row in val_results], weights=test_data_weights, axis=0
-        # )
-
         average_test_loss = np.average(
             [row[0] for row in test_results], weights=val_data_weights, axis=0
         )
@@ -123,62 +116,6 @@ if __name__ == '__main__':
         )
         Final_test_accuracy.append(average_test_accuracy)
         print("loss", average_test_loss, "acc", average_test_accuracy) 
-        # average_final_test_accuracy = np.average(
-        #     [row[1] for row in test_results], weights=val_data_weights, axis=0
-        # )
-
-        # results = np.array([clients.get_all_loss_accuracy() for clients in server.clients])
-
-
-
-        # train_data_weights = [torch.sum(train_mask) for train_mask in split_train_mask]
-        # test_data_weights = [torch.sum(test_mask) for test_mask in split_test_mask]
-        # val_data_weights = [torch.sum(val_mask) for val_mask in split_val_mask]
-        
-        # average_train_loss = np.average(
-        #     [row[0] for row in results], weights=train_data_weights, axis=0
-        # )
-        # average_train_accuracy = np.average(
-        #     [row[1] for row in results], weights=train_data_weights, axis=0
-        # )
-        # average_test_loss = np.average(
-        #     [row[2] for row in results], weights=test_data_weights, axis=0
-        # )
-        # average_test_accuracy = np.average(
-        #     [row[3] for row in results], weights=test_data_weights, axis=0
-        # )
-        # average_val_loss = np.average(
-        #     [row[4] for row in results], weights=val_data_weights, axis=0
-        # )
-        # average_val_accuracy = np.average(
-        #     [row[5] for row in results], weights=val_data_weights, axis=0
-        # )
-
-        # test_results = np.array([client.local_test() for client in server.clients])
-        # val_results = np.array([client.local_val() for client in server.clients])
-
-        # average_final_val_loss = np.average(
-        #     [row[0] for row in val_results], weights=test_data_weights, axis=0
-        # )
-        # average_final_val_accuracy = np.average(
-        #     [row[1] for row in val_results], weights=test_data_weights, axis=0
-        # )
-
-        # average_final_test_loss = np.average(
-        #     [row[0] for row in test_results], weights=val_data_weights, axis=0
-        # )
-        # average_final_test_accuracy = np.average(
-        #     [row[1] for row in test_results], weights=val_data_weights, axis=0
-        # )
-
-        # Final_test_accuracy.append(average_final_test_accuracy)
-
-        # print("val", average_final_val_loss, average_final_val_accuracy)
-        # print("test", average_final_test_loss, average_final_test_accuracy) 
-    # try:
-    #     torch.cuda.memory._dump_snapshot(f"gpu.pickle")
-    # except Exception as e:
-    #     print(f"Failed to capture memory snapshot {e}")
-    # torch.cuda.memory._record_memory_history(enabled=None)
-    print("Final Test Accuracy: ", round(np.mean(Final_test_accuracy), 4), round(np.std(Final_test_accuracy)))
+ 
+    print("Final Test Accuracy: ", round(np.mean(Final_test_accuracy), 4), round(np.std(Final_test_accuracy), 4))
   
