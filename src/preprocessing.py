@@ -11,6 +11,12 @@ import torch_geometric
 from dhg import Graph, Hypergraph
 from dhg.data import Cora, Pubmed, Citeseer, Cooking200, News20, Yelp3k, DBLP4k
 
+simple_graph_method = ["FedGCN", "FedSage"]
+hypergraph_method = ["FedHGN"]
+
+cite_dataset = ["cora", "pubmed", "citeseer"]
+hypergraph_dataset = ["cooking", "news", "yelp", "dblp"]
+
 def add_self_loops(edge_index):
     # 识别所有独立的节点
     unique_nodes = set()
@@ -26,13 +32,7 @@ def add_self_loops(edge_index):
     return edge_index_with_loops
 
 # 读取数据集
-def load_dataset(device, args):
-       
-    simple_graph_method = ["FedGCN", "FedSage"]
-    hypergraph_method = ["FedHGN"]
-    
-    cite_dataset = ["cora", "pubmed", "citeseer"]
-    hypergraph_dataset = ["cooking", "news", "yelp", "dblp"]
+def load_dataset(args):
     
     if args.dname == "cora":
         data = Cora() 
@@ -72,12 +72,17 @@ def load_dataset(device, args):
         features = data["features"]
         edge_list = data["edge_by_paper"] + data["edge_by_term"] + data["edge_by_conf"]
 
-    if args.method != "FedSage":
+    if args.method == "FedGCN":
         edge_list = add_self_loops(edge_list)
-
     args.num_classes = data["num_classes"]
+
+    return features, edge_list, data["labels"], data["num_vertices"]
+
+# 读取数据集
+def split_dataset(features, edge_list, labels, num_vertices, args, device):
+    
     split_idx = label_dirichlet_partition(
-        data["labels"], data["num_vertices"], args.num_classes, args.n_client, args.iid_beta, device
+        labels, num_vertices, args.num_classes, args.n_client, args.iid_beta, device
     )
 
     split_structure = []
@@ -87,15 +92,15 @@ def load_dataset(device, args):
     
     if args.dname in cite_dataset and args.method in hypergraph_method:
         # print(data["num_vertices"])
-        G = Graph(data["num_vertices"], edge_list)
+        G = Graph(num_vertices, edge_list)
         HG = Hypergraph.from_graph_kHop(G, k=1)
         edge_list = HG.e_of_group("main")[0]
     if args.dname in hypergraph_dataset and args.method in simple_graph_method:
-        HG = Hypergraph(data["num_vertices"], edge_list).to(device)
+        HG = Hypergraph(num_vertices, edge_list).to(device)
         G = Graph.from_hypergraph_clique(HG, weighted=True)
         edge_list = G.e[0] 
     if args.dname in hypergraph_dataset and args.method in hypergraph_method:
-        HG = Hypergraph(data["num_vertices"], edge_list)
+        HG = Hypergraph(num_vertices, edge_list)
 
     # pre-train process(first layer)
     if args.method == "FedHGN" and not args.local:
@@ -103,12 +108,12 @@ def load_dataset(device, args):
         features = HG.smoothing_with_HGNN(features)
 
     split_X = [features[split_idx[i]] for i in range(args.n_client)]
-    split_Y = [data["labels"][split_idx[i]] for i in range(args.n_client)]    
+    split_Y = [labels[split_idx[i]] for i in range(args.n_client)]    
 
     for i in range(args.n_client):
         
         node_num = len(split_idx[i])
-        train_mask, test_mask, val_mask = rand_train_test_idx(node_num, args.train_prop, args.valid_prop) 
+        train_mask, test_mask, val_mask = rand_train_test_idx(node_num, args.train_prop, args.val_prop, args.test_prop) 
         if args.method in simple_graph_method:
             if args.local:
                 new_edge_list = extract_subgraph(edge_list, split_idx[i])
@@ -117,12 +122,12 @@ def load_dataset(device, args):
                 new_edge_list, neighbors = extract_subgraph_with_neighbors(edge_list, split_idx[i])
                 node_num = node_num + len(neighbors)
                 split_X[i] = torch.cat([split_X[i], features[neighbors]], dim=0)
-                split_Y[i] = torch.cat([split_Y[i], data["labels"][neighbors]], dim=0)
+                split_Y[i] = torch.cat([split_Y[i], labels[neighbors]], dim=0)
                 for _ in range(args.num_neighbor - 1):
                     new_edge_list, neighbors = extract_subgraph_with_neighbors(edge_list, split_idx[i] + neighbors)
                     node_num = node_num + len(neighbors)
                     split_X[i] = torch.cat([split_X[i], features[neighbors]], dim=0)
-                    split_Y[i] = torch.cat([split_Y[i], data["labels"][neighbors]], dim=0)
+                    split_Y[i] = torch.cat([split_Y[i], labels[neighbors]], dim=0)
                 
                 if args.method == "FedSage":
                     G_noise = np.random.normal(loc=0, scale = 0.1, size=features[neighbors].shape).astype(np.float32)
@@ -144,7 +149,7 @@ def load_dataset(device, args):
                 new_edge_list, neighbors = extract_subgraph_with_neighbors(edge_list, split_idx[i])
                 HG = Hypergraph(num_v=node_num + len(neighbors), e_list=new_edge_list)
                 split_X[i] = torch.cat([split_X[i], features[neighbors]], dim=0)
-                split_Y[i] = torch.cat([split_Y[i], data["labels"][neighbors]], dim=0)
+                split_Y[i] = torch.cat([split_Y[i], labels[neighbors]], dim=0)
                 split_X[i] = HG.smoothing_with_HGNN(split_X[i])
 
             split_structure.append(HG)
@@ -310,12 +315,13 @@ def generate_bool_tensor(length, true_count, mask=None):
     
     return tensor
 
-def rand_train_test_idx(node_num, train_porb, val_prob):
+def rand_train_test_idx(node_num, train_porb, val_prob, test_prob):
 
     trainCount = node_num * train_porb
     valCount = node_num * val_prob
+    testCount = node_num * test_prob
     train_mask = generate_bool_tensor(node_num, int(trainCount))
     val_mask = generate_bool_tensor(node_num, int(valCount), train_mask)
-    test_mask = ~(train_mask | val_mask)
+    test_mask = generate_bool_tensor(node_num, int(testCount), train_mask | val_mask)
     return train_mask, val_mask, test_mask
 
