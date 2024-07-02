@@ -53,7 +53,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_neighbor', default=1, type=int)  # Placeholder
 
     args = parser.parse_args()
-    
+    args.valid_prop = args.train_prop
     # put things to device
     if args.cuda in [0, 1]:
         device = torch.device('cuda:'+str(args.cuda)
