@@ -9,7 +9,7 @@ import scipy.sparse as sp
 from collections import Counter
 import torch_geometric
 from dhg import Graph, Hypergraph
-from dhg.data import Cora, Pubmed, Citeseer, Cooking200, News20
+from dhg.data import Cora, Pubmed, Citeseer, Cooking200, News20, Yelp3k, DBLP4k
 
 # 读取数据集
 def load_dataset(device, args):
@@ -18,7 +18,7 @@ def load_dataset(device, args):
     hypergraph_method = ["FedHGN"]
     
     cite_dataset = ["cora", "pubmed", "citeseer"]
-    hypergraph_dataset = ["cooking", "news"]
+    hypergraph_dataset = ["cooking", "news", "yelp", "dblp"]
     
     if args.dname == "cora":
         data = Cora() 
@@ -30,6 +30,10 @@ def load_dataset(device, args):
         data = Cooking200()
     elif args.dname == "news":
         data = News20()
+    elif args.dname == "yelp":
+        data = Yelp3k()
+    elif args.dname == "dblp":
+        data = DBLP4k()
         
     if args.dname in cite_dataset:
         args.num_features = data["dim_features"]
@@ -40,13 +44,20 @@ def load_dataset(device, args):
             mask = torch.gt(features, 0) & torch.lt(features, 1.1)
             # # 使用布尔索引选出满足条件的元素
             features[mask] = 1.0
+        edge_list = data["edge_list"]
     elif args.dname == "cooking":
         features = torch.eye(data["num_vertices"])
         args.num_features = features.shape[1]
-    elif args.dname == "news":
+        edge_list = data["edge_list"]
+    elif args.dname in ["news", "yelp"]:
         args.num_features = data["dim_features"]
         features = data["features"]
-           
+        edge_list = data["edge_list"]
+    elif args.dname == "dblp":
+        args.num_features = data["dim_features"]
+        features = data["features"]
+        edge_list = data["edge_by_paper"] + data["edge_by_term"] + data["edge_by_conf"]
+
     args.num_classes = data["num_classes"]
     split_idx = label_dirichlet_partition(
         data["labels"], data["num_vertices"], args.num_classes, args.n_client, args.iid_beta, device
@@ -56,19 +67,18 @@ def load_dataset(device, args):
     split_train_mask = []
     split_val_mask = []
     split_test_mask = []    
-
-    edge_list = data["edge_list"]
+    
     if args.dname in cite_dataset and args.method in hypergraph_method:
         # print(data["num_vertices"])
-        G = Graph(data["num_vertices"], data["edge_list"])
+        G = Graph(data["num_vertices"], edge_list)
         HG = Hypergraph.from_graph_kHop(G, k=1)
         edge_list = HG.e_of_group("main")[0]
     if args.dname in hypergraph_dataset and args.method in simple_graph_method:
-        HG = Hypergraph(data["num_vertices"], data["edge_list"]).to(device)
+        HG = Hypergraph(data["num_vertices"], edge_list).to(device)
         G = Graph.from_hypergraph_clique(HG, weighted=True)
         edge_list = G.e[0] 
     if args.dname in hypergraph_dataset and args.method in hypergraph_method:
-        HG = Hypergraph(data["num_vertices"], data["edge_list"])
+        HG = Hypergraph(data["num_vertices"], edge_list)
 
     # pre-train process(first layer)
     if args.method == "FedHGN" and not args.local:
@@ -100,7 +110,7 @@ def load_dataset(device, args):
                 if args.method == "FedSage":
                     G_noise = np.random.normal(loc=0, scale = 0.1, size=features[neighbors].shape).astype(np.float32)
                     features[neighbors] += G_noise
-                split_structure.append(Graph(num_v=node_num, e_list=new_edge_list, device=device).A)
+            split_structure.append(Graph(num_v=node_num, e_list=new_edge_list, device=device).A)
 
         elif args.method == "FedHGN":
             new_edge_list = extract_subgraph(edge_list, split_idx[i])

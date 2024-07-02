@@ -45,7 +45,7 @@ if __name__ == '__main__':
     # client num
     parser.add_argument('--n_client', default=5, type=int)
     # global round
-    parser.add_argument('--global_rounds', default=100, type=int)
+    parser.add_argument('--global_rounds', default=200, type=int)
     # data distribution
     parser.add_argument("-iid_b", "--iid_beta", default=10000, type=float)
     # act as safety mode

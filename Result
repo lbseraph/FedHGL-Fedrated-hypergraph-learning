@@ -2,6 +2,13 @@
 
 (K 3 gr 200)
 
+python ./src/main.py --dname cora --num_layers 2  --local --n_client 3 --method FedHGN --train_prop 0.05 --global_rounds 200
+
+python ./src/main.py --dname cora --num_layers 2  --local --n_client 3 --method FedGCN --train_prop 0.05 --global_rounds 200
+
+python ./src/main.py --dname cora --num_layers 2  --local --n_client 3 --method FedSage --train_prop 0.05 --global_rounds 200
+
+
 python ./src/main.py --dname cora --num_layers 2 --num_neighbor 1 --n_client 3 --method FedHGN --train_prop 0.05 --global_rounds 200
 Final Test Accuracy:  0.8038422860968044 0.00586798492680015
 
@@ -88,6 +95,32 @@ Final Test Accuracy:  0.6135868995007863 0.00885758063965475
 
 [news20]
 
+(c 3)
+python ./src/main.py --dname news --num_layers 2 --num_neighbor 1 --n_client 3  --method FedHGN --train_prop 0.1 --valid_prop 0.25 --global_rounds 200
+Final Test Accuracy:  0.7958616527030042 0.0008226326010286626
+
+python ./src/main.py --dname news --num_layers 2 --num_neighbor 1 --n_client 3  --method FedGCN --train_prop 0.1 --valid_prop 0.25 --global_rounds 200
+Final Test Accuracy:  0.7566951409572937 0.0014868016762159706
+
+python ./src/main.py --dname news --num_layers 2 --num_neighbor 2 --n_client 3  --method FedGCN --train_prop 0.1 --valid_prop 0.25 --global_rounds 200
+Final Test Accuracy:  0.7566951185612144 0.0014458969172484817
+
+python ./src/main.py --dname news --num_layers 2 --num_neighbor 1 --n_client 3  --method FedSage --train_prop 0.1 --valid_prop 0.25 --global_rounds 200
+Final Test Accuracy:  0.7875384284761074 0.0013246992392514153
+
+(c 5)
+python ./src/main.py --dname news --num_layers 2 --num_neighbor 1 --n_client 5  --method FedHGN --train_prop 0.1 --valid_prop 0.25 --global_rounds 200
+Final Test Accuracy:  0.8008326357738922 0.0006403432633952722
+
+python ./src/main.py --dname news --num_layers 2 --num_neighbor 1 --n_client 5  --method FedGCN --train_prop 0.1 --valid_prop 0.25 --global_rounds 200
+Final Test Accuracy:  0.7727764960043444 0.001426918752176483
+
+python ./src/main.py --dname news --num_layers 2 --num_neighbor 2 --n_client 5  --method FedGCN --train_prop 0.1 --valid_prop 0.25 --global_rounds 200
+Final Test Accuracy:  0.7532567222772132 0.003046860294731327
+
+python ./src/main.py --dname news --num_layers 2 --num_neighbor 1 --n_client 5  --method FedSage --train_prop 0.1 --valid_prop 0.25 --global_rounds 200
+Final Test Accuracy:  0.785653663123864 0.0019897598448231483
+
 (c 10)
 python ./src/main.py --dname news --num_layers 2 --num_neighbor 1 --n_client 10  --method FedHGN --train_prop 0.1 --valid_prop 0.25 --global_rounds 200
 Final Test Accuracy:  0.8112007611041724 0.001197059737991538
@@ -101,31 +134,46 @@ Final Test Accuracy:  0.7728009550824253 0.0013940300945550598
 python ./src/main.py --dname news --num_layers 2 --num_neighbor 1 --n_client 10  --method FedSage --train_prop 0.1 --valid_prop 0.25 --global_rounds 200
 Final Test Accuracy:  0.804214252073634 0.0016030822938715996
 
+[dbpl4k]
+(c 10)
+python ./src/main.py --dname dblp --num_layers 2 --num_neighbor 1 --n_client 10  --method FedHGN --train_prop 0.02 --valid_prop 0.25 --global_rounds 200
+Final Test Accuracy:  0.7601107513653881 0.00694781419708732
+
+python ./src/main.py --dname dblp --num_layers 2 --num_neighbor 1 --n_client 10  --method FedGCN --train_prop 0.02 --valid_prop 0.25 --global_rounds 200
+
+
+python ./src/main.py --dname dblp --num_layers 2 --num_neighbor 2 --n_client 10  --method FedGCN --train_prop 0.02 --valid_prop 0.25 --global_rounds 200
+
+
+python ./src/main.py --dname dblp --num_layers 2 --num_neighbor 1 --n_client 10  --method FedSage --train_prop 0.02 --valid_prop 0.25 --global_rounds 200
+
+
 (c 5)
-python ./src/main.py --dname news --num_layers 2 --num_neighbor 1 --n_client 5  --method FedHGN --train_prop 0.1 --valid_prop 0.25 --global_rounds 200
-Final Test Accuracy:  0.8008326357738922 0.0006403432633952722
-
-python ./src/main.py --dname news --num_layers 2 --num_neighbor 1 --n_client 5  --method FedGCN --train_prop 0.1 --valid_prop 0.25 --global_rounds 200
+python ./src/main.py --dname dblp --num_layers 2 --num_neighbor 1 --n_client 5  --method FedHGN --train_prop 0.02 --valid_prop 0.25 --global_rounds 200
 
 
-python ./src/main.py --dname news --num_layers 2 --num_neighbor 2 --n_client 5  --method FedGCN --train_prop 0.1 --valid_prop 0.25 --global_rounds 200
+python ./src/main.py --dname dblp --num_layers 2 --num_neighbor 1 --n_client 5  --method FedGCN --train_prop 0.02 --valid_prop 0.25 --global_rounds 200
 
 
-python ./src/main.py --dname news --num_layers 2 --num_neighbor 1 --n_client 5  --method FedSage --train_prop 0.1 --valid_prop 0.25 --global_rounds 200
-Final Test Accuracy:  0.785653663123864 0.0019897598448231483
+python ./src/main.py --dname dblp --num_layers 2 --num_neighbor 2 --n_client 5  --method FedGCN --train_prop 0.02 --valid_prop 0.25 --global_rounds 200
+
+
+python ./src/main.py --dname dblp --num_layers 2 --num_neighbor 1 --n_client 5  --method FedSage --train_prop 0.02 --valid_prop 0.25 --global_rounds 200
+
 
 (c 3)
-python ./src/main.py --dname news --num_layers 2 --num_neighbor 1 --n_client 3  --method FedHGN --train_prop 0.1 --valid_prop 0.25 --global_rounds 200
-Final Test Accuracy:  0.7958616527030042 0.0008226326010286626
-
-python ./src/main.py --dname news --num_layers 2 --num_neighbor 1 --n_client 3  --method FedGCN --train_prop 0.1 --valid_prop 0.25 --global_rounds 200
+python ./src/main.py --dname dblp --num_layers 2 --num_neighbor 1 --n_client 3  --method FedHGN --train_prop 0.02 --valid_prop 0.25 --global_rounds 200
 
 
-python ./src/main.py --dname news --num_layers 2 --num_neighbor 2 --n_client 3  --method FedGCN --train_prop 0.1 --valid_prop 0.25 --global_rounds 200
+python ./src/main.py --dname dblp --num_layers 2 --num_neighbor 1 --n_client 3  --method FedGCN --train_prop 0.02 --valid_prop 0.25 --global_rounds 200
 
 
-python ./src/main.py --dname news --num_layers 2 --num_neighbor 1 --n_client 3  --method FedSage --train_prop 0.1 --valid_prop 0.25 --global_rounds 200
-Final Test Accuracy:  0.7875384284761074 0.0013246992392514153
+python ./src/main.py --dname dblp --num_layers 2 --num_neighbor 2 --n_client 3  --method FedGCN --train_prop 0.02 --valid_prop 0.25 --global_rounds 200
+
+
+python ./src/main.py --dname dblp --num_layers 2 --num_neighbor 1 --n_client 3  --method FedSage --train_prop 0.02 --valid_prop 0.25 --global_rounds 200
+
+
 
 [cooking200]
 python ./src/main.py --dname cooking --num_layers 2 --num_neighbor 1 --n_client 5  --method FedHGN --train_prop 0.05 --valid_prop 0.25 --global_rounds 200
