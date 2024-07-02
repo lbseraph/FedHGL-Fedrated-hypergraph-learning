@@ -11,6 +11,20 @@ import torch_geometric
 from dhg import Graph, Hypergraph
 from dhg.data import Cora, Pubmed, Citeseer, Cooking200, News20, Yelp3k, DBLP4k
 
+def add_self_loops(edge_index):
+    # 识别所有独立的节点
+    unique_nodes = set()
+    for edge in edge_index:
+        unique_nodes.update(edge)
+    
+    # 为每个节点创建自环
+    self_loops = [(node, node) for node in unique_nodes]
+    
+    # 将自环添加到edge_index中
+    edge_index_with_loops = edge_index + self_loops
+    
+    return edge_index_with_loops
+
 # 读取数据集
 def load_dataset(device, args):
        
@@ -57,6 +71,9 @@ def load_dataset(device, args):
         args.num_features = data["dim_features"]
         features = data["features"]
         edge_list = data["edge_by_paper"] + data["edge_by_term"] + data["edge_by_conf"]
+
+    if args.method != "FedSage":
+        edge_list = add_self_loops(edge_list)
 
     args.num_classes = data["num_classes"]
     split_idx = label_dirichlet_partition(

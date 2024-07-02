@@ -22,13 +22,13 @@ from dhg.random import set_seed
         
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train_prop', type=float, default=0.2)
-    parser.add_argument('--valid_prop', type=float, default=0.2)
+    parser.add_argument('--train_prop', type=float, default=0.5)
+    parser.add_argument('--valid_prop', type=float, default=0.25)
     parser.add_argument('--dname', default='cora')
     parser.add_argument('--method', default='FedHGN')
     parser.add_argument('--local_step', default=3, type=int)
     # Number of runs for each split (test fix, only shuffle train/val)
-    parser.add_argument('--runs', default=20, type=int)
+    parser.add_argument('--runs', default=10, type=int)
     parser.add_argument('--cuda', default=0, choices=[-1, 0, 1], type=int)
     parser.add_argument('--dropout', default=0.5, type=float)
     parser.add_argument('--lr', default=0.01, type=float)
@@ -63,7 +63,7 @@ if __name__ == '__main__':
         device = torch.device('cpu')
     
     ### Load and preprocess data ###
-    set_seed(2025)
+    set_seed(2024)
 
     
     print("Begin Train!")
