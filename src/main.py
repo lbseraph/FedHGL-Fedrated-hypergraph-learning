@@ -22,8 +22,8 @@ from dhg.random import set_seed
         
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train_prop', type=float, default=0.05)
-    parser.add_argument('--test_prop', type=float, default=0.5)
+    parser.add_argument('--train_prop', type=float, default=0.1)
+    parser.add_argument('--test_prop', type=float, default=0.3)
     parser.add_argument('--val_prop', type=float, default=0.2)
     parser.add_argument('--dname', default='cora')
     parser.add_argument('--method', default='FedHGN')
@@ -64,8 +64,10 @@ if __name__ == '__main__':
         device = torch.device('cpu')
     
     ### Load and preprocess data ###
-    set_seed(2024)
-    features_origin, edge_list, labels, num_vertices = load_dataset(args)
+    set_seed(2025)
+
+    features_origin, edge_list, labels, num_vertices, HG = load_dataset(args, device)
+
     print("Begin Train!")
     ### Training loop ###
     runtime_list = []
@@ -73,7 +75,7 @@ if __name__ == '__main__':
     for run in tqdm(range(args.runs)):
         # 根据通信范围，获取子图和子图所有节点的邻居构成的扩充图
         features = features_origin.clone()
-        split_X, split_Y, split_structure, split_train_mask, split_val_mask, split_test_mask = split_dataset(features, edge_list, labels, num_vertices, args, device)
+        split_X, split_Y, split_structure, split_train_mask, split_val_mask, split_test_mask = split_dataset(features, edge_list, labels, num_vertices, HG, args, device)
         # 新建联邦学习客户端和服务器
         clients = [
                 Client(

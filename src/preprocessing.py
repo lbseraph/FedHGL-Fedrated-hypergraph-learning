@@ -32,7 +32,7 @@ def add_self_loops(edge_index):
     return edge_index_with_loops
 
 # 读取数据集
-def load_dataset(args):
+def load_dataset(args, device):
     
     if args.dname == "cora":
         data = Cora() 
@@ -76,11 +76,28 @@ def load_dataset(args):
         edge_list = add_self_loops(edge_list)
     args.num_classes = data["num_classes"]
 
-    return features, edge_list, data["labels"], data["num_vertices"]
+    num_vertices = data["num_vertices"]
+
+    if args.dname in cite_dataset and args.method in hypergraph_method:
+        # print(data["num_vertices"])
+        G = Graph(num_vertices, edge_list)
+        HG = Hypergraph.from_graph_kHop(G, k=1)
+        HG.add_hyperedges_from_feature_kNN(feature=features, k=3)
+        edge_list = HG.e_of_group("main")[0]
+    elif args.dname in hypergraph_dataset and args.method in simple_graph_method:
+        HG = Hypergraph(num_vertices, edge_list).to(device)
+        G = Graph.from_hypergraph_clique(HG, weighted=True)
+        edge_list = G.e[0] 
+    elif args.dname in hypergraph_dataset and args.method in hypergraph_method:
+        HG = Hypergraph(num_vertices, edge_list)
+    else:
+        HG = None
+
+    return features, edge_list, data["labels"], data["num_vertices"], HG
 
 # 读取数据集
-def split_dataset(features, edge_list, labels, num_vertices, args, device):
-    
+def split_dataset(features, edge_list, labels, num_vertices, HG, args, device): 
+
     split_idx = label_dirichlet_partition(
         labels, num_vertices, args.num_classes, args.n_client, args.iid_beta, device
     )
@@ -88,19 +105,7 @@ def split_dataset(features, edge_list, labels, num_vertices, args, device):
     split_structure = []
     split_train_mask = []
     split_val_mask = []
-    split_test_mask = []    
-    
-    if args.dname in cite_dataset and args.method in hypergraph_method:
-        # print(data["num_vertices"])
-        G = Graph(num_vertices, edge_list)
-        HG = Hypergraph.from_graph_kHop(G, k=1)
-        edge_list = HG.e_of_group("main")[0]
-    if args.dname in hypergraph_dataset and args.method in simple_graph_method:
-        HG = Hypergraph(num_vertices, edge_list).to(device)
-        G = Graph.from_hypergraph_clique(HG, weighted=True)
-        edge_list = G.e[0] 
-    if args.dname in hypergraph_dataset and args.method in hypergraph_method:
-        HG = Hypergraph(num_vertices, edge_list)
+    split_test_mask = []
 
     # pre-train process(first layer)
     if args.method == "FedHGN" and not args.local:
