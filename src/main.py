@@ -22,8 +22,8 @@ from dhg.random import set_seed
         
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train_prop', type=float, default=0.03)
-    parser.add_argument('--valid_prop', type=float, default=0.2)
+    parser.add_argument('--train_prop', type=float, default=0.1)
+    parser.add_argument('--valid_prop', type=float, default=0.1)
     parser.add_argument('--dname', default='cora')
     parser.add_argument('--method', default='FedHGN')
     parser.add_argument('--local_step', default=3, type=int)
@@ -53,7 +53,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_neighbor', default=1, type=int)  # Placeholder
 
     args = parser.parse_args()
-    args.valid_prop = args.train_prop
+    # args.valid_prop = args.train_prop
     # put things to device
     if args.cuda in [0, 1]:
         device = torch.device('cuda:'+str(args.cuda)
@@ -63,7 +63,7 @@ if __name__ == '__main__':
         device = torch.device('cpu')
     
     ### Load and preprocess data ###
-    set_seed(2025)
+    set_seed(2024)
     split_X, split_Y, split_structure, split_train_mask, split_val_mask, split_test_mask = load_dataset(device, args)
     
     print("Begin Train!")
@@ -180,5 +180,5 @@ if __name__ == '__main__':
     # except Exception as e:
     #     print(f"Failed to capture memory snapshot {e}")
     # torch.cuda.memory._record_memory_history(enabled=None)
-    print("Final Test Accuracy: ", np.mean(Final_test_accuracy), np.std(Final_test_accuracy))
+    print("Final Test Accuracy: ", round(np.mean(Final_test_accuracy), 4), round(np.std(Final_test_accuracy)))
   
