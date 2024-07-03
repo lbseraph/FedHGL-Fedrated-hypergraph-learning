@@ -145,8 +145,11 @@ def split_dataset(features, edge_list, labels, num_vertices, HG, args, device):
                 if args.method == "FedGCN":
                     for _ in range(args.num_layers - 1):
                         # 从其它客户端处获取2跳以上邻居的信息，但是不能跨客户端
+                        # print("???", len(edge_list))
                         sub_edge = remove_cross_edges(edge_list, cross_edges)
+                        # print("???", len(sub_edge))
                         new_edge_list, neighbors = extract_subgraph_with_neighbors(edge_list, split_idx[i] + neighbors, sub_edge)
+                        # print(len(neighbors))
                         node_num = node_num + len(neighbors)
                         split_X[i] = torch.cat([split_X[i], features[neighbors]], dim=0)
                         split_Y[i] = torch.cat([split_Y[i], labels[neighbors]], dim=0)
@@ -174,21 +177,6 @@ def split_dataset(features, edge_list, labels, num_vertices, HG, args, device):
                 split_X[i] = torch.cat([split_X[i], features[neighbors]], dim=0)
                 split_Y[i] = torch.cat([split_Y[i], labels[neighbors]], dim=0)
                 split_X[i] = HG.smoothing_with_HGNN(split_X[i])
-
-                # new_edge_list, neighbors = extract_subgraph_with_neighbors(edge_list, split_idx[i])
-                # node_num = node_num + len(neighbors)
-                # split_X[i] = torch.cat([split_X[i], features[neighbors]], dim=0)
-                # split_Y[i] = torch.cat([split_Y[i], labels[neighbors]], dim=0)
-
-                # for _ in range(args.num_neighbor - 1):
-                #     new_edge_list, neighbors = extract_subgraph_with_neighbors(edge_list, split_idx[i] + neighbors)
-                #     node_num = node_num + len(neighbors)
-                #     split_X[i] = torch.cat([split_X[i], features[neighbors]], dim=0)
-                #     split_Y[i] = torch.cat([split_Y[i], labels[neighbors]], dim=0)
-                # HG = Hypergraph(num_v=node_num + len(neighbors), e_list=new_edge_list)
-                # split_X[i] = HG.smoothing_with_HGNN(split_X[i])
-                # for _ in range(args.num_layers - 1):
-                #     split_X[i] = HG.smoothing_with_HGNN(split_X[i])
 
             split_structure.append(HG)
             
@@ -251,43 +239,6 @@ def extract_subgraph_with_neighbors(edge_list, idx_list, sub_edge_list=None):
             new_edge_list.append(tuple(old_to_new[node] for node in edge))
 
     return new_edge_list, list(neighbors)
-
-# 提取
-# def extract_subgraph_with_neighbors_safe(hyperedges, idx_list, node_client):
-#     # 过滤超边
-#     filtered_hyperedges = [
-#         edge for edge in hyperedges
-#         if sum(node in idx_list for node in edge) >= 2
-#     ]
-
-#     # 第二步：从超边中移除孤立的节点
-#     final_hyperedges = []
-#     for edge in filtered_hyperedges:
-#         # 统计每个客户端中节点的数量
-#         client_node_count = {}
-#         for node in edge:
-#             client = node_client[node]
-#             if client not in client_node_count:
-#                 client_node_count[client] = 0
-#             client_node_count[client] += 1
-        
-#         # 只保留那些客户端中有至少两个节点的节点
-#         new_edge = [node for node in edge if client_node_count[node_client[node]] >= 2]
-#         if len(new_edge) >= 2:
-#             final_hyperedges.append(new_edge)
-
-
-#     # 创建新的节点映射
-#     all_nodes = set(node for edge in final_hyperedges for node in edge)
-#         # 新节点数和新邻居
-#     new_nodes = sorted(set(all_nodes) - set(idx_list))
-
-#     old_to_new = {node: i for i, node in enumerate(list(idx_list) + new_nodes)}
-
-#     # 使用新映射重新编号超边
-#     remapped_hyperedges = [[old_to_new[node] for node in edge] for edge in final_hyperedges]
-
-#     return remapped_hyperedges, list(new_nodes)
 
 def label_dirichlet_partition(labels, N: int, K: int, n_parties: int, beta: float, device):
     """
