@@ -22,7 +22,7 @@ from dhg.random import set_seed
         
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train_prop', type=float, default=0.1)
+    parser.add_argument('--train_prop', type=float, default=0.2)
     parser.add_argument('--test_prop', type=float, default=0.4)
     parser.add_argument('--val_prop', type=float, default=0.2)
     parser.add_argument('--dname', default='cora')
