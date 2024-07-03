@@ -23,7 +23,7 @@ from dhg.random import set_seed
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--train_prop', type=float, default=0.1)
-    parser.add_argument('--test_prop', type=float, default=0.3)
+    parser.add_argument('--test_prop', type=float, default=0.4)
     parser.add_argument('--val_prop', type=float, default=0.2)
     parser.add_argument('--dname', default='cora')
     parser.add_argument('--method', default='FedHGN')
@@ -51,7 +51,6 @@ if __name__ == '__main__':
     parser.add_argument("-iid_b", "--iid_beta", default=10000, type=float)
     # act as safety mode
     parser.add_argument('--safety', action='store_true')
-    parser.add_argument('--num_neighbor', default=1, type=int)  # Placeholder
 
     args = parser.parse_args()
 

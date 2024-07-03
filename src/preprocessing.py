@@ -17,20 +17,6 @@ hypergraph_method = ["FedHGN"]
 cite_dataset = ["cora", "pubmed", "citeseer"]
 hypergraph_dataset = ["cooking", "news", "yelp", "dblp"]
 
-def add_self_loops(edge_index):
-    # 识别所有独立的节点
-    unique_nodes = set()
-    for edge in edge_index:
-        unique_nodes.update(edge)
-    
-    # 为每个节点创建自环
-    self_loops = [(node, node) for node in unique_nodes]
-    
-    # 将自环添加到edge_index中
-    edge_index_with_loops = edge_index + self_loops
-    
-    return edge_index_with_loops
-
 # 读取数据集
 def load_dataset(args, device):
     
@@ -71,9 +57,8 @@ def load_dataset(args, device):
         args.num_features = data["dim_features"]
         features = data["features"]
         edge_list = data["edge_by_paper"] + data["edge_by_term"] + data["edge_by_conf"]
+    print("hyperedge", len(edge_list))
 
-    if args.method == "FedGCN":
-        edge_list = add_self_loops(edge_list)
     args.num_classes = data["num_classes"]
 
     num_vertices = data["num_vertices"]
@@ -82,18 +67,44 @@ def load_dataset(args, device):
         # print(data["num_vertices"])
         G = Graph(num_vertices, edge_list)
         HG = Hypergraph.from_graph_kHop(G, k=1)
-        HG.add_hyperedges_from_feature_kNN(feature=features, k=3)
         edge_list = HG.e_of_group("main")[0]
+        print("hyperedge", len(edge_list))
+        # HG.add_hyperedges_from_feature_kNN(feature=features, k=4)
+        # edge_list = HG.e_of_group("main")[0]
     elif args.dname in hypergraph_dataset and args.method in simple_graph_method:
         HG = Hypergraph(num_vertices, edge_list).to(device)
-        G = Graph.from_hypergraph_clique(HG, weighted=True)
+        G = Graph.from_hypergraph_clique(HG, weighted=True, device=device)
         edge_list = G.e[0] 
     elif args.dname in hypergraph_dataset and args.method in hypergraph_method:
         HG = Hypergraph(num_vertices, edge_list)
     else:
         HG = None
-
+    print("hyperedge", len(edge_list))
     return features, edge_list, data["labels"], data["num_vertices"], HG
+
+def find_cross_edges(edge_list, split_idx):
+
+    # 创建一个节点到客户端的映射
+    node_to_client = {}
+    for client_id, nodes in enumerate(split_idx):
+        for node in nodes:
+            node_to_client[node] = client_id
+
+    cross_edges = []
+    for u, v in edge_list:
+        # 检查 u 和 v 是否属于不同的客户端
+        if node_to_client[u] != node_to_client[v]:
+            cross_edges.append((u, v))
+
+    return cross_edges
+
+def remove_cross_edges(edge_list, sub_edge_list):
+
+    # 将sub_edge_list转换为集合以便快速查找
+    sub_edge_set = set(sub_edge_list)
+    # 从edge_list中删除sub_edge_list中的边
+    remaining_edges = [edge for edge in edge_list if edge not in sub_edge_set]
+    return remaining_edges
 
 # 读取数据集
 def split_dataset(features, edge_list, labels, num_vertices, HG, args, device): 
@@ -107,13 +118,15 @@ def split_dataset(features, edge_list, labels, num_vertices, HG, args, device):
     split_val_mask = []
     split_test_mask = []
 
+    split_X = [features[split_idx[i]] for i in range(args.n_client)]
+    split_Y = [labels[split_idx[i]] for i in range(args.n_client)]    
+
     # pre-train process(first layer)
     if args.method == "FedHGN" and not args.local:
         old_split_X = [features[split_idx[i]] for i in range(args.n_client)]
         features = HG.smoothing_with_HGNN(features)
-
-    split_X = [features[split_idx[i]] for i in range(args.n_client)]
-    split_Y = [labels[split_idx[i]] for i in range(args.n_client)]    
+    if args.method == "FedGCN" and not args.local:
+        cross_edges = find_cross_edges(edge_list, split_idx)
 
     for i in range(args.n_client):
         
@@ -128,11 +141,15 @@ def split_dataset(features, edge_list, labels, num_vertices, HG, args, device):
                 node_num = node_num + len(neighbors)
                 split_X[i] = torch.cat([split_X[i], features[neighbors]], dim=0)
                 split_Y[i] = torch.cat([split_Y[i], labels[neighbors]], dim=0)
-                for _ in range(args.num_neighbor - 1):
-                    new_edge_list, neighbors = extract_subgraph_with_neighbors(edge_list, split_idx[i] + neighbors)
-                    node_num = node_num + len(neighbors)
-                    split_X[i] = torch.cat([split_X[i], features[neighbors]], dim=0)
-                    split_Y[i] = torch.cat([split_Y[i], labels[neighbors]], dim=0)
+
+                if args.method == "FedGCN":
+                    for _ in range(args.num_layers - 1):
+                        # 从其它客户端处获取2跳以上邻居的信息，但是不能跨客户端
+                        sub_edge = remove_cross_edges(edge_list, cross_edges)
+                        new_edge_list, neighbors = extract_subgraph_with_neighbors(edge_list, split_idx[i] + neighbors, sub_edge)
+                        node_num = node_num + len(neighbors)
+                        split_X[i] = torch.cat([split_X[i], features[neighbors]], dim=0)
+                        split_Y[i] = torch.cat([split_Y[i], labels[neighbors]], dim=0)
                 
                 if args.method == "FedSage":
                     G_noise = np.random.normal(loc=0, scale = 0.1, size=features[neighbors].shape).astype(np.float32)
@@ -151,11 +168,27 @@ def split_dataset(features, edge_list, labels, num_vertices, HG, args, device):
                 # pre-train process(second layer)
                 HG1 = Hypergraph(num_v=node_num, e_list=new_edge_list)
                 features[split_idx[i]] = HG1.smoothing_with_HGNN(old_split_X[i])
+                
                 new_edge_list, neighbors = extract_subgraph_with_neighbors(edge_list, split_idx[i])
                 HG = Hypergraph(num_v=node_num + len(neighbors), e_list=new_edge_list)
                 split_X[i] = torch.cat([split_X[i], features[neighbors]], dim=0)
                 split_Y[i] = torch.cat([split_Y[i], labels[neighbors]], dim=0)
                 split_X[i] = HG.smoothing_with_HGNN(split_X[i])
+
+                # new_edge_list, neighbors = extract_subgraph_with_neighbors(edge_list, split_idx[i])
+                # node_num = node_num + len(neighbors)
+                # split_X[i] = torch.cat([split_X[i], features[neighbors]], dim=0)
+                # split_Y[i] = torch.cat([split_Y[i], labels[neighbors]], dim=0)
+
+                # for _ in range(args.num_neighbor - 1):
+                #     new_edge_list, neighbors = extract_subgraph_with_neighbors(edge_list, split_idx[i] + neighbors)
+                #     node_num = node_num + len(neighbors)
+                #     split_X[i] = torch.cat([split_X[i], features[neighbors]], dim=0)
+                #     split_Y[i] = torch.cat([split_Y[i], labels[neighbors]], dim=0)
+                # HG = Hypergraph(num_v=node_num + len(neighbors), e_list=new_edge_list)
+                # split_X[i] = HG.smoothing_with_HGNN(split_X[i])
+                # for _ in range(args.num_layers - 1):
+                #     split_X[i] = HG.smoothing_with_HGNN(split_X[i])
 
             split_structure.append(HG)
             
@@ -185,16 +218,24 @@ def extract_subgraph(edge_list, idx_list):
     return new_edge_list
 
 # 提取包含包含客户端自身节点，加上客户端边界节点邻居节点的子图
-def extract_subgraph_with_neighbors(edge_list, idx_list):
+def extract_subgraph_with_neighbors(edge_list, idx_list, sub_edge_list=None):
 
     # 将idx_list转换为集合，以便快速检查元素
     idx_set = set(idx_list)
     included_nodes = set(idx_list)
     neighbors = set()
+
     # 遍历所有边以找到所有邻居
-    for edge in edge_list:
-        if any(node in idx_set for node in edge):
-            neighbors.update(edge)
+    if sub_edge_list is None:
+        for edge in edge_list :
+            # 不能是跨客户端边（在多层FedGCN中）
+            if any(node in idx_set for node in edge):
+                neighbors.update(edge)
+    else:
+        for edge in sub_edge_list :
+            # 不能是跨客户端边（在多层FedGCN中）
+            if any(node in idx_set for node in edge):
+                neighbors.update(edge)
     
     # 排除已经在idx_list中的节点，只保留真正的邻居节点
     neighbors.difference_update(idx_set)

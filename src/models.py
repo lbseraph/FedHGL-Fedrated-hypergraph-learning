@@ -28,12 +28,12 @@ class GCN(nn.Module):
         super(GCN, self).__init__()
         self.convs = torch.nn.ModuleList()
         if NumLayers == 1:
-            self.convs.append(GCNConv(nfeat, nclass, normalize=True, add_self_loops=False, cached=True))
+            self.convs.append(GCNConv(nfeat, nclass, normalize=True, add_self_loops=True, cached=True))
         else:      
-            self.convs.append(GCNConv(nfeat, nhid, normalize=True, add_self_loops=False, cached=True))
+            self.convs.append(GCNConv(nfeat, nhid, normalize=True, add_self_loops=True, cached=True))
             for _ in range(NumLayers - 2):
-                self.convs.append(GCNConv(nhid, nhid, normalize=True, add_self_loops=False, cached=True))
-            self.convs.append(GCNConv(nhid, nclass, normalize=True, add_self_loops=False, cached=True))
+                self.convs.append(GCNConv(nhid, nhid, normalize=True, add_self_loops=True, cached=True))
+            self.convs.append(GCNConv(nhid, nclass, normalize=True, add_self_loops=True, cached=True))
         self.act = nn.ReLU(inplace=True)
         self.drop = nn.Dropout(dropout)
 
