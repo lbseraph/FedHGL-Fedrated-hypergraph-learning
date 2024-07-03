@@ -63,7 +63,7 @@ if __name__ == '__main__':
         device = torch.device('cpu')
     
     ### Load and preprocess data ###
-    set_seed(2024)
+    set_seed(2025)
 
     features_origin, edge_list, labels, num_vertices, HG = load_dataset(args, device)
 
