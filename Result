@@ -1,136 +1,136 @@
 [cora]
 
-python ./src/main.py --dname cora --num_layers 2 --n_client 1 --method FedHGN --global_rounds 500
-
+python ./src/main.py --dname cora --num_layers 2 --n_client 1 --method FedHGN --global_rounds 600
+Final Test Accuracy:  0.8391 0.015
 
 (K 3 gr 200)
 
 python ./src/main.py --dname cora --num_layers 2  --local --n_client 3 --method FedHGN 
-
+Final Test Accuracy:  0.7565 0.0149
 
 python ./src/main.py --dname cora --num_layers 2  --local --n_client 3 --method FedGCN 
-
+Final Test Accuracy:  0.7276 0.0188
 
 python ./src/main.py --dname cora --num_layers 2  --local --n_client 3 --method FedSage 
-
+Final Test Accuracy:  0.6999 0.0186
 
 python ./src/main.py --dname cora --num_layers 2  --n_client 3 --method FedHGN 
-
+Final Test Accuracy:  0.8391 0.0098
 
 python ./src/main.py --dname cora --num_layers 2  --n_client 3 --method FedGCN 
-
+Final Test Accuracy:  0.8286 0.014
 
 python ./src/main.py --dname cora --num_layers 2  --n_client 3 --method FedSage 
-
+Final Test Accuracy:  0.8054 0.0219
 
 (K 6 gr 200)
 
 python ./src/main.py --dname cora --num_layers 2  --local --n_client 6 --method FedHGN 
-
+Final Test Accuracy:  0.65 0.0147
 
 python ./src/main.py --dname cora --num_layers 2  --local --n_client 6 --method FedGCN 
-
+Final Test Accuracy:  0.6551 0.0236
 
 python ./src/main.py --dname cora --num_layers 2  --local --n_client 6 --method FedSage 
-
+Final Test Accuracy:  0.5942 0.021
 
 python ./src/main.py --dname cora --num_layers 2  --n_client 6 --method FedHGN 
-
+Final Test Accuracy:  0.8284 0.0142
 
 python ./src/main.py --dname cora --num_layers 2  --n_client 6 --method FedGCN 
-
+Final Test Accuracy:  0.8209 0.0151
 
 python ./src/main.py --dname cora --num_layers 2  --n_client 6 --method FedSage 
-
+Final Test Accuracy:  0.7883 0.0121
 
 (K 9 gr 200)
 
 python ./src/main.py --dname cora --num_layers 2  --local --n_client 9 --method FedHGN 
-
+Final Test Accuracy:  0.5826 0.0259
 
 python ./src/main.py --dname cora --num_layers 2  --local --n_client 9 --method FedGCN 
-
+Final Test Accuracy:  0.5965 0.0188
 
 python ./src/main.py --dname cora --num_layers 2  --local --n_client 9 --method FedSage 
-
+Final Test Accuracy:  0.5595 0.0255
 
 python ./src/main.py --dname cora --num_layers 2  --n_client 9 --method FedHGN 
-
+Final Test Accuracy:  0.8268 0.0175
 
 python ./src/main.py --dname cora --num_layers 2  --n_client 9 --method FedGCN 
-
+Final Test Accuracy:  0.8156 0.0168
 
 python ./src/main.py --dname cora --num_layers 2  --n_client 9 --method FedSage 
-
+Final Test Accuracy:  0.7732 0.0186
 
 [citeseer]
 
-python ./src/main.py --dname citeseer --num_layers 2  --n_client 1  --method FedHGN --global_rounds 500
-
+python ./src/main.py --dname citeseer --num_layers 2  --n_client 1  --method FedHGN --global_rounds 600
+Final Test Accuracy:  0.7197 0.0123
 
 (c 3 gr 200)
 
 python ./src/main.py --dname citeseer --num_layers 2  --local --n_client 3 --method FedHGN 
-
+Final Test Accuracy:  0.5849 0.0212
 
 python ./src/main.py --dname citeseer --num_layers 2  --local --n_client 3 --method FedGCN 
-
+Final Test Accuracy:  0.6563 0.0175
 
 python ./src/main.py --dname citeseer --num_layers 2  --local --n_client 3 --method FedSage 
-
+Final Test Accuracy:  0.6328 0.0181
 
 python ./src/main.py --dname citeseer --num_layers 2  --n_client 3  --method FedHGN 
-
+Final Test Accuracy:  0.7115 0.0196
 
 python ./src/main.py --dname citeseer --num_layers 2  --n_client 3  --method FedGCN 
-
+Final Test Accuracy:  0.7023 0.0156
 
 python ./src/main.py --dname citeseer --num_layers 2  --n_client 3  --method FedSage 
-
+Final Test Accuracy:  0.6787 0.0136
 
 (c 6 gr 200)
 
 python ./src/main.py --dname citeseer --num_layers 2  --local --n_client 6 --method FedHGN 
-
+Final Test Accuracy:  0.478 0.0182
 
 python ./src/main.py --dname citeseer --num_layers 2  --local --n_client 6 --method FedGCN 
-
+Final Test Accuracy:  0.6296 0.0213
 
 python ./src/main.py --dname citeseer --num_layers 2  --local --n_client 6 --method FedSage 
-
+Final Test Accuracy:  0.6108 0.015
 
 python ./src/main.py --dname citeseer --num_layers 2  --n_client 6  --method FedHGN 
-
+Final Test Accuracy:  0.7114 0.0134
 
 python ./src/main.py --dname citeseer --num_layers 2  --n_client 6  --method FedGCN 
-
+Final Test Accuracy:  0.6995 0.019
 
 python ./src/main.py --dname citeseer --num_layers 2  --n_client 6  --method FedSage 
-
+Final Test Accuracy:  0.6661 0.0167
 
 (c 9 gr 200)
 
 python ./src/main.py --dname citeseer --num_layers 2  --local --n_client 9 --method FedHGN 
-
+Final Test Accuracy:  0.4117 0.0192
 
 python ./src/main.py --dname citeseer --num_layers 2  --local --n_client 9 --method FedGCN 
-
+Final Test Accuracy:  0.618 0.0182
 
 python ./src/main.py --dname citeseer --num_layers 2  --local --n_client 9 --method FedSage 
-
+Final Test Accuracy:  0.5934 0.0206
 
 python ./src/main.py --dname citeseer --num_layers 2  --n_client 9  --method FedHGN 
-
+Final Test Accuracy:  0.7075 0.0202
 
 python ./src/main.py --dname citeseer --num_layers 2  --n_client 9  --method FedGCN 
-
+Final Test Accuracy:  0.7018 0.0201
 
 python ./src/main.py --dname citeseer --num_layers 2  --n_client 9  --method FedSage 
-
+Final Test Accuracy:  0.6523 0.0165
 
 [news20]
 
-python ./src/main.py --dname news20 --num_layers 2 --n_client 1 --method FedHGN --global_rounds 500
+python ./src/main.py --dname news --num_layers 2 --n_client 1 --method FedHGN --global_rounds 600
 
 
 (c 3)
@@ -195,65 +195,66 @@ python ./src/main.py --dname news --num_layers 2  --n_client 9  --method FedSage
 
 [dbpl4k]
 
-python ./src/main.py --dname dblp --num_layers 2 --n_client 1 --method FedHGN --global_rounds 500 --hiddens_num 32
+python ./src/main.py --dname dblp --num_layers 2 --n_client 1 --method FedHGN --train_ratio 0.02 --global_rounds 600 --hiddens_num 32
+Final Test Accuracy:  0.8651 0.0143
 
 (c 3)
 
-python ./src/main.py --dname dblp --num_layers 2  --local --n_client 3  --method FedHGN --hiddens_num 32 --train_ratio 0.05
+python ./src/main.py --dname dblp --num_layers 2  --local --n_client 3  --method FedHGN --train_ratio 0.05 --hiddens_num 32
+Final Test Accuracy:  0.8445 0.0506
+
+python ./src/main.py --dname dblp --num_layers 2 --local  --n_client 3  --method FedGCN --train_ratio 0.02 --hiddens_num 32
+Final Test Accuracy:  0.7783 0.0305
+
+python ./src/main.py --dname dblp --num_layers 2  --local --n_client 3  --method FedSage --train_ratio 0.02 --hiddens_num 32
 
 
-python ./src/main.py --dname dblp --num_layers 2 --local  --n_client 3  --method FedGCN --hiddens_num 32
+python ./src/main.py --dname dblp --num_layers 2  --n_client 3  --method FedHGN --train_ratio 0.02 --hiddens_num 32
+Final Test Accuracy:  0.8496 0.022
 
+python ./src/main.py --dname dblp --num_layers 2  --n_client 3  --method FedGCN  --train_ratio 0.02 --hiddens_num 32
+Final Test Accuracy:  0.7806 0.0332
 
-python ./src/main.py --dname dblp --num_layers 2  --local --n_client 3  --method FedSage --hiddens_num 32
-
-
-python ./src/main.py --dname dblp --num_layers 2  --n_client 3  --method FedHGN  --hiddens_num 32 --train_ratio 0.05
-
-
-python ./src/main.py --dname dblp --num_layers 2  --n_client 3  --method FedGCN  --hiddens_num 32 --train_ratio 0.05
-
-
-python ./src/main.py --dname dblp --num_layers 2  --n_client 3  --method FedSage  --hiddens_num 32 --train_ratio 0.05
+python ./src/main.py --dname dblp --num_layers 2  --n_client 3  --method FedSage  --train_ratio 0.02 --hiddens_num 32
 
 
 (c 6)
 
-python ./src/main.py --dname dblp --num_layers 2  --local --n_client 6  --method FedHGN --hiddens_num 32
+python ./src/main.py --dname dblp --num_layers 2  --local --n_client 6  --method FedHGN --train_ratio 0.02 --hiddens_num 32
+Final Test Accuracy:  0.8061 0.0483
+
+python ./src/main.py --dname dblp --num_layers 2 --local  --n_client 6  --method FedGCN --train_ratio 0.02 --hiddens_num 32
+Final Test Accuracy:  0.7566 0.0272
+
+python ./src/main.py --dname dblp --num_layers 2  --local --n_client 6  --method FedSage --train_ratio 0.02 --hiddens_num 32
 
 
-python ./src/main.py --dname dblp --num_layers 2 --local  --n_client 6  --method FedGCN --hiddens_num 32
+python ./src/main.py --dname dblp --num_layers 2  --n_client 6  --method FedHGN  --train_ratio 0.02 --hiddens_num 32
+Final Test Accuracy:  0.8294 0.0334
+
+python ./src/main.py --dname dblp --num_layers 2  --n_client 6  --method FedGCN  --train_ratio 0.02 --hiddens_num 32
 
 
-python ./src/main.py --dname dblp --num_layers 2  --local --n_client 6  --method FedSage --hiddens_num 32
-
-
-python ./src/main.py --dname dblp --num_layers 2  --n_client 6  --method FedHGN  --hiddens_num 32
-
-
-python ./src/main.py --dname dblp --num_layers 2  --n_client 6  --method FedGCN  --hiddens_num 32
-
-
-python ./src/main.py --dname dblp --num_layers 2  --n_client 6  --method FedSage  --hiddens_num 32
+python ./src/main.py --dname dblp --num_layers 2  --n_client 6  --method FedSage  --train_ratio 0.02 --hiddens_num 32
 
 
 (c 9)
 
-python ./src/main.py --dname dblp --num_layers 2  --local --n_client 9  --method FedHGN --hiddens_num 32
+python ./src/main.py --dname dblp --num_layers 2  --local --n_client 9  --method FedHGN --train_ratio 0.02 --hiddens_num 32
+Final Test Accuracy:  0.7836 0.0517
+
+python ./src/main.py --dname dblp --num_layers 2 --local  --n_client 9  --method FedGCN --train_ratio 0.02 --hiddens_num 32
+Final Test Accuracy:  0.7325 0.0389
+
+python ./src/main.py --dname dblp --num_layers 2  --local --n_client 9  --method FedSage --train_ratio 0.02 --hiddens_num 32
 
 
-python ./src/main.py --dname dblp --num_layers 2 --local  --n_client 9  --method FedGCN --hiddens_num 32
+python ./src/main.py --dname dblp --num_layers 2  --n_client 9  --method FedHGN  --train_ratio 0.02 --hiddens_num 32
+Final Test Accuracy:  0.7928 0.0499
+
+python ./src/main.py --dname dblp --num_layers 2  --n_client 9  --method FedGCN  --train_ratio 0.02 --hiddens_num 32
 
 
-python ./src/main.py --dname dblp --num_layers 2  --local --n_client 9  --method FedSage --hiddens_num 32
-
-
-python ./src/main.py --dname dblp --num_layers 2  --n_client 9  --method FedHGN  --hiddens_num 32
-
-
-python ./src/main.py --dname dblp --num_layers 2  --n_client 9  --method FedGCN  --hiddens_num 32
-
-
-python ./src/main.py --dname dblp --num_layers 2  --n_client 9  --method FedSage  --hiddens_num 32
+python ./src/main.py --dname dblp --num_layers 2  --n_client 9  --method FedSage  --train_ratio 0.02 --hiddens_num 32
 
 
