@@ -131,7 +131,7 @@ def split_dataset(features, edge_list, labels, num_vertices, HG, args, device):
     for i in range(args.n_client):
         
         node_num = len(split_idx[i])
-        train_mask, test_mask, val_mask = rand_train_test_idx(node_num, args.train_prop, args.val_prop, args.test_prop) 
+        train_mask, test_mask, val_mask = rand_train_test_idx(node_num, args.train_ratio, args.val_ratio, args.test_ratio) 
         if args.method in simple_graph_method:
             if args.local:
                 new_edge_list = extract_subgraph(edge_list, split_idx[i])
@@ -139,6 +139,12 @@ def split_dataset(features, edge_list, labels, num_vertices, HG, args, device):
 
                 new_edge_list, neighbors = extract_subgraph_with_neighbors(edge_list, split_idx[i])
                 node_num = node_num + len(neighbors)
+
+                if args.method == "FedSage":
+                    
+                    G_noise = np.random.normal(loc=0, scale = 0.1, size=features.shape).astype(np.float32)
+                    features += G_noise
+
                 split_X[i] = torch.cat([split_X[i], features[neighbors]], dim=0)
                 split_Y[i] = torch.cat([split_Y[i], labels[neighbors]], dim=0)
 
@@ -154,9 +160,7 @@ def split_dataset(features, edge_list, labels, num_vertices, HG, args, device):
                         split_X[i] = torch.cat([split_X[i], features[neighbors]], dim=0)
                         split_Y[i] = torch.cat([split_Y[i], labels[neighbors]], dim=0)
                 
-                if args.method == "FedSage":
-                    G_noise = np.random.normal(loc=0, scale = 0.1, size=features[neighbors].shape).astype(np.float32)
-                    features[neighbors] += G_noise
+                
             split_structure.append(Graph(num_v=node_num, e_list=new_edge_list, device=device).A)
 
         elif args.method == "FedHGN":
@@ -312,11 +316,11 @@ def generate_bool_tensor(length, true_count, mask=None):
     
     return tensor
 
-def rand_train_test_idx(node_num, train_porb, val_prob, test_prob):
+def rand_train_test_idx(node_num, train_ratio, val_ratio, test_ratio):
 
-    trainCount = node_num * train_porb
-    valCount = node_num * val_prob
-    testCount = node_num * test_prob
+    trainCount = node_num * train_ratio
+    valCount = node_num * val_ratio
+    testCount = node_num * test_ratio
     train_mask = generate_bool_tensor(node_num, int(trainCount))
     val_mask = generate_bool_tensor(node_num, int(valCount), train_mask)
     test_mask = generate_bool_tensor(node_num, int(testCount), train_mask | val_mask)

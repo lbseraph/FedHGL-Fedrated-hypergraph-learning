@@ -22,9 +22,9 @@ from dhg.random import set_seed
         
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train_prop', type=float, default=0.1)
-    parser.add_argument('--test_prop', type=float, default=0.5)
-    parser.add_argument('--val_prop', type=float, default=0.25)
+    parser.add_argument('--train_ratio', type=float, default=0.1)
+    parser.add_argument('--test_ratio', type=float, default=0.5)
+    parser.add_argument('--val_ratio', type=float, default=0.25)
     parser.add_argument('--dname', default='cora')
     parser.add_argument('--method', default='FedHGN')
     parser.add_argument('--local_step', default=3, type=int)
