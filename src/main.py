@@ -64,6 +64,7 @@ if __name__ == '__main__':
     
     ### Load and preprocess data ###
     set_seed(2025)
+    torch.cuda.manual_seed(2025)
 
     features_origin, edge_list, labels, num_vertices, HG = load_dataset(args, device)
 
@@ -116,6 +117,9 @@ if __name__ == '__main__':
         average_test_accuracy = np.average(
             [row[1] for row in test_results], weights=val_data_weights, axis=0
         )
+
+
+
         Final_test_accuracy.append(average_test_accuracy)
         print("loss", average_test_loss, "acc", average_test_accuracy) 
  
