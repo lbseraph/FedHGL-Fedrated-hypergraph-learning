@@ -117,7 +117,7 @@ def split_dataset(features, edge_list, labels, num_vertices, HG, args, device):
     split_train_mask = []
     split_val_mask = []
     split_test_mask = []
-
+    
     split_X = [features[split_idx[i]] for i in range(args.n_client)]
     split_Y = [labels[split_idx[i]] for i in range(args.n_client)]    
 
@@ -142,7 +142,12 @@ def split_dataset(features, edge_list, labels, num_vertices, HG, args, device):
 
                 if args.method == "FedSage":
                     
-                    G_noise = np.random.normal(loc=0, scale = 0.1, size=features.shape).astype(np.float32)
+                    if args.dname == "dblp":
+                        scale = 0.2
+                    else:
+                        scale = 0.1
+
+                    G_noise = np.random.normal(loc=0, scale = scale, size=features.shape).astype(np.float32)
                     features += G_noise
 
                 split_X[i] = torch.cat([split_X[i], features[neighbors]], dim=0)
