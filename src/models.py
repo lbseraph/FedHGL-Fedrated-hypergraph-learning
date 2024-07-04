@@ -131,19 +131,22 @@ class HGNN(nn.Module):
             self.hgcs.append(HGNNConv(n_hid, n_class))
         self.act = nn.ReLU(inplace=True)
         self.layer_num = layer_num
-        self.dropout = dropout
+        self.drop = nn.Dropout(dropout)
         
     def reset_parameters(self):
         for hgc in self.hgcs:
             hgc.reset_parameters()
 
     def forward(self, x, G):
-        for hgc in self.hgcs:
+        for hgc in self.hgcs[:-1]:
             x = hgc(x, G)
+            x = self.drop(x)
+        x = self.hgcs[-1](x, G)
         x = self.act(x)
-        # x = F.dropout(x, p=self.dropout, training=self.training)
+
         # r = torch.log_softmax(x, dim=-1)
-        return x
+        return torch.log_softmax(x, dim=-1)
+
 
 class HGNNConv(nn.Module):
     def __init__(self, in_ft, out_ft):
