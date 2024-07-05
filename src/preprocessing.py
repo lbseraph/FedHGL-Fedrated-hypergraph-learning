@@ -17,6 +17,22 @@ hypergraph_method = ["FedHGN"]
 cite_dataset = ["cora", "pubmed", "citeseer"]
 hypergraph_dataset = ["cooking", "news", "yelp", "dblp"]
 
+# 去除重复的边和孤立的点
+def clean_edge_list(edge_list):
+    unique_edges = set()
+    cleaned_edge_list = []
+
+    for edge in edge_list:
+        # Convert edge to a frozenset to make it hashable and to ignore order of nodes
+        edge_set = frozenset(edge)
+        
+        # Skip edges with only one node
+        if len(edge) > 1 and edge_set not in unique_edges:
+            unique_edges.add(edge_set)
+            cleaned_edge_list.append(edge)
+
+    return cleaned_edge_list
+
 # 读取数据集
 def load_dataset(args, device):
     
@@ -57,8 +73,11 @@ def load_dataset(args, device):
         args.num_features = data["dim_features"]
         features = data["features"]
         edge_list = data["edge_by_paper"] + data["edge_by_term"] + data["edge_by_conf"]
+        # print(edge_list)
     print("hyperedge", len(edge_list))
-
+    print("before", len(edge_list))
+    edge_list = clean_edge_list(edge_list)
+    print("after", len(edge_list))
     args.num_classes = data["num_classes"]
 
     num_vertices = data["num_vertices"]
@@ -79,6 +98,8 @@ def load_dataset(args, device):
         HG = Hypergraph(num_vertices, edge_list)
     else:
         HG = None
+
+    
     print("hyperedge", len(edge_list))
     return features, edge_list, data["labels"], data["num_vertices"], HG
 
@@ -142,10 +163,10 @@ def split_dataset(features, edge_list, labels, num_vertices, HG, args, device):
 
                 if args.method == "FedSage":
                     
-                    if args.dname == "dblp":
-                        scale = 0.3
-                    else:
-                        scale = 0.1
+                    # if args.dname == "dblp":
+                    #     scale = 0.2
+                    # else:
+                    scale = 0.1
 
                     G_noise = np.random.normal(loc=0, scale = scale, size=features.shape).astype(np.float32)
                     features += G_noise
