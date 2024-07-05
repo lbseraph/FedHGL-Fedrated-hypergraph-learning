@@ -143,7 +143,7 @@ def split_dataset(features, edge_list, labels, num_vertices, HG, args, device):
                 if args.method == "FedSage":
                     
                     if args.dname == "dblp":
-                        scale = 0.2
+                        scale = 0.3
                     else:
                         scale = 0.1
 
@@ -224,8 +224,7 @@ def extract_subgraph_with_neighbors(edge_list, idx_list, sub_edge_list=None):
 
     # 遍历所有边以找到所有邻居
     if sub_edge_list is None:
-        for edge in edge_list :
-            # 不能是跨客户端边（在多层FedGCN中）
+        for edge in edge_list:
             if any(node in idx_set for node in edge):
                 neighbors.update(edge)
     else:
@@ -244,7 +243,7 @@ def extract_subgraph_with_neighbors(edge_list, idx_list, sub_edge_list=None):
     # 创建新的边集，使用新的节点编号
     new_edge_list = []
     for edge in edge_list:
-        if all(node in included_nodes for node in edge):
+        if all(node in included_nodes for node in edge) and any(node in idx_set for node in edge):
             new_edge_list.append(tuple(old_to_new[node] for node in edge))
 
     return new_edge_list, list(neighbors)
