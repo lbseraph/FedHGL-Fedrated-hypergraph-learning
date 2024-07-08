@@ -104,7 +104,6 @@ def load_dataset(args, device):
     return features, edge_list, data["labels"], data["num_vertices"], HG
 
 def find_cross_edges(edge_list, split_idx):
-
     # 创建一个节点到客户端的映射
     node_to_client = {}
     for client_id, nodes in enumerate(split_idx):
@@ -112,10 +111,12 @@ def find_cross_edges(edge_list, split_idx):
             node_to_client[node] = client_id
 
     cross_edges = []
-    for u, v in edge_list:
-        # 检查 u 和 v 是否属于不同的客户端
-        if node_to_client[u] != node_to_client[v]:
-            cross_edges.append((u, v))
+    for edge in edge_list:
+        # 获取边的所有节点所属的客户端
+        clients = {node_to_client[node] for node in edge}
+        # 如果边跨越多个客户端，则将其加入 cross_edges
+        if len(clients) > 1:
+            cross_edges.append(edge)
 
     return cross_edges
 
@@ -139,15 +140,21 @@ def split_dataset(features, edge_list, labels, num_vertices, HG, args, device):
     split_val_mask = []
     split_test_mask = []
     
+    # pre-train process(first layer)
+    if args.method == "FedHGN" and not args.local:
+        for _ in range(args.num_layers):
+            features = HG.smoothing_with_HGNN(features)
+
     split_X = [features[split_idx[i]] for i in range(args.n_client)]
     split_Y = [labels[split_idx[i]] for i in range(args.n_client)]    
 
-    # pre-train process(first layer)
-    if args.method == "FedHGN" and not args.local:
-        old_split_X = [features[split_idx[i]] for i in range(args.n_client)]
-        features = HG.smoothing_with_HGNN(features)
-    if args.method == "FedGCN" and not args.local:
-        cross_edges = find_cross_edges(edge_list, split_idx)
+    cross_edges = find_cross_edges(edge_list, split_idx)
+
+    if args.method == "FedSage":
+                
+        scale = 0.1
+        G_noise = np.random.normal(loc=0, scale = scale, size=features.shape).astype(np.float32)
+        features += G_noise
 
     for i in range(args.n_client):
         
@@ -160,16 +167,6 @@ def split_dataset(features, edge_list, labels, num_vertices, HG, args, device):
 
                 new_edge_list, neighbors = extract_subgraph_with_neighbors(edge_list, split_idx[i])
                 node_num = node_num + len(neighbors)
-
-                if args.method == "FedSage":
-                    
-                    # if args.dname == "dblp":
-                    #     scale = 0.2
-                    # else:
-                    scale = 0.1
-
-                    G_noise = np.random.normal(loc=0, scale = scale, size=features.shape).astype(np.float32)
-                    features += G_noise
 
                 split_X[i] = torch.cat([split_X[i], features[neighbors]], dim=0)
                 split_Y[i] = torch.cat([split_Y[i], labels[neighbors]], dim=0)
@@ -185,12 +182,15 @@ def split_dataset(features, edge_list, labels, num_vertices, HG, args, device):
                         node_num = node_num + len(neighbors)
                         split_X[i] = torch.cat([split_X[i], features[neighbors]], dim=0)
                         split_Y[i] = torch.cat([split_Y[i], labels[neighbors]], dim=0)
-                
-                
+                    
             split_structure.append(Graph(num_v=node_num, e_list=new_edge_list, device=device).A)
 
         elif args.method == "FedHGN":
             new_edge_list = extract_subgraph(edge_list, split_idx[i])
+
+            HG = Hypergraph(num_v=node_num, e_list=new_edge_list)
+            # old_split_idx = split_idx
+
             if args.local:
                 HG = Hypergraph(num_v=node_num, e_list=new_edge_list)
                 # pre-training process
@@ -198,19 +198,10 @@ def split_dataset(features, edge_list, labels, num_vertices, HG, args, device):
                 for _ in range(args.num_layers - 1):
                     split_X[i] = HG.smoothing_with_HGNN(split_X[i])
             else:
-                # pre-train process(second layer)
-                HG1 = Hypergraph(num_v=node_num, e_list=new_edge_list)
-                features[split_idx[i]] = HG1.smoothing_with_HGNN(old_split_X[i])
-                
-                new_edge_list, neighbors = extract_subgraph_with_neighbors(edge_list, split_idx[i])
-                HG = Hypergraph(num_v=node_num + len(neighbors), e_list=new_edge_list)
-                split_X[i] = torch.cat([split_X[i], features[neighbors]], dim=0)
-                split_Y[i] = torch.cat([split_Y[i], labels[neighbors]], dim=0)
-                split_X[i] = HG.smoothing_with_HGNN(split_X[i])
-
+                pass
+                     
             split_structure.append(HG)
-            
-
+        
         split_train_mask.append(train_mask)
         split_val_mask.append(val_mask)
         split_test_mask.append(test_mask)
