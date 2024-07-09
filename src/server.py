@@ -38,6 +38,7 @@ class Server:
             )
         self.model = self.model.to(device)
         self.clients = clients
+        self.local = args.local
         self.num_of_clients = len(clients)
         self.broadcast_params(-1)
 
@@ -52,7 +53,7 @@ class Server:
             client.train(current_global_epoch)
             torch.cuda.empty_cache()
         
-        if len(self.clients) > 1:
+        if len(self.clients) > 1 and not self.local:
             self.zero_params()
 
             # FedAvg algorithm

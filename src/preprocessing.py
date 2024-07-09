@@ -168,7 +168,7 @@ def split_dataset(features, edge_list, labels, num_vertices, HG, args, device):
         node_num = len(split_idx[i])
         train_mask, test_mask, val_mask = rand_train_test_idx(node_num, args.train_ratio, args.val_ratio, args.test_ratio) 
         if args.method in simple_graph_method:
-            if args.HC:
+            if not args.HC:
                 new_edge_list = extract_subgraph(edge_list, split_idx[i])
             else:
 
@@ -198,7 +198,7 @@ def split_dataset(features, edge_list, labels, num_vertices, HG, args, device):
             HG = Hypergraph(num_v=node_num, e_list=new_edge_list)
             # old_split_idx = split_idx
 
-            if args.HC:
+            if not args.HC:
                 HG = Hypergraph(num_v=node_num, e_list=new_edge_list)
                 # pre-training process
                 split_X[i] = HG.smoothing_with_HGNN(split_X[i])
