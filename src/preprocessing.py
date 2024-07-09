@@ -147,7 +147,7 @@ def split_dataset(features, edge_list, labels, num_vertices, HG, args, device):
     split_val_mask = []
     split_test_mask = []
     
-    if args.method == "FedHGN" and not args.HC:
+    if args.method == "FedHGN" and args.HC:
     #     for _ in range(args.num_layers):
     #         features = HG.smoothing_with_HGNN(features)
         new_features = HG.smoothing_with_HGNN(features)
