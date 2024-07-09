@@ -35,7 +35,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr', default=0.01, type=float)
     parser.add_argument('--num_layers', default=2,
                         type=int)  # How many layers of encoder
-    parser.add_argument('--num_layers2', default=1,
+    parser.add_argument('--num_layers2', default=2,
                         type=int)  # How many layers of encoder
     parser.add_argument('--hiddens_num', default=16,
                         type=int)  # Encoder hidden units
