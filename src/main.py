@@ -30,7 +30,7 @@ if __name__ == '__main__':
     parser.add_argument('--local_step', default=3, type=int)
     # Number of runs for each split (test fix, only shuffle train/val)
     parser.add_argument('--runs', default=20, type=int)
-    parser.add_argument('--cuda', default=0, choices=[-1, 0, 1], type=int)
+    parser.add_argument('--cuda', default=0, choices=[-1, 0, 1, 2, 3], type=int)
     parser.add_argument('--dropout', default=0.5, type=float)
     parser.add_argument('--lr', default=0.01, type=float)
     parser.add_argument('--num_layers', default=2,
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # put things to device
-    if args.cuda in [0, 1]:
+    if args.cuda in [0, 1, 2, 3]:
         device = torch.device('cuda:'+str(args.cuda)
                               if torch.cuda.is_available() else 'cpu')
         # torch.cuda.memory._record_memory_history(max_entries=100000)

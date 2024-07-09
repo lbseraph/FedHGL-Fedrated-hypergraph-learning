@@ -9,13 +9,13 @@ import scipy.sparse as sp
 from collections import Counter
 import torch_geometric
 from dhg import Graph, Hypergraph
-from dhg.data import Cora, Pubmed, Citeseer, Cooking200, News20, Yelp3k, DBLP4k
+from dhg.data import Cora, Pubmed, Citeseer, Cooking200, News20, Yelp3k, DBLP4k, IMDB4k
 
 simple_graph_method = ["FedGCN", "FedSage"]
 hypergraph_method = ["FedHGN"]
 
 cite_dataset = ["cora", "pubmed", "citeseer"]
-hypergraph_dataset = ["cooking", "news", "yelp", "dblp"]
+hypergraph_dataset = ["cooking", "news", "yelp", "dblp", "imdb"]
 
 # 去除重复的边和孤立的点
 def clean_edge_list(edge_list):
@@ -50,6 +50,8 @@ def load_dataset(args, device):
         data = Yelp3k()
     elif args.dname == "dblp":
         data = DBLP4k()
+    elif args.dname == "imdb":
+        data = IMDB4k()
         
     if args.dname in cite_dataset:
         args.num_features = data["dim_features"]
@@ -72,8 +74,13 @@ def load_dataset(args, device):
     elif args.dname == "dblp":
         args.num_features = data["dim_features"]
         features = data["features"]
-        edge_list = data["edge_by_paper"] + data["edge_by_term"] + data["edge_by_conf"]
+        edge_list = data["edge_by_conf"] # +   +data["edge_by_term"] data["edge_by_paper"]
         # print(edge_list)
+    elif args.dname == "imdb":
+        args.num_features = data["dim_features"]
+        features = data["features"]
+        edge_list = data["edge_by_director"] + data["edge_by_actor"] # +   +data["edge_by_term"] data["edge_by_paper"]
+
     print("hyperedge", len(edge_list))
     print("before", len(edge_list))
     edge_list = clean_edge_list(edge_list)
@@ -208,7 +215,6 @@ def split_dataset(features, edge_list, labels, num_vertices, HG, args, device):
                 # split_X[i] = HG.smoothing_with_HGNN(split_X[i])
                 # split_X[i] = HG.smoothing_with_HGNN(split_X[i])
                 for _ in range(args.num_layers2 - 1):
-                    
                     split_X[i] = split_X[i][:split_point]
                     split_X[i] = torch.cat([split_X[i], new_features[neighbors]], dim=0)
                     split_X[i] = HG.smoothing_with_HGNN(split_X[i])                               
