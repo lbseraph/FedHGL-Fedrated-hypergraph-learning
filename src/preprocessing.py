@@ -140,10 +140,10 @@ def split_dataset(features, edge_list, labels, num_vertices, HG, args, device):
     split_val_mask = []
     split_test_mask = []
     
-    # pre-train process(first layer)
     if args.method == "FedHGN" and not args.local:
-        for _ in range(args.num_layers):
-            features = HG.smoothing_with_HGNN(features)
+    #     for _ in range(args.num_layers):
+    #         features = HG.smoothing_with_HGNN(features)
+        new_features = HG.smoothing_with_HGNN(features)
 
     split_X = [features[split_idx[i]] for i in range(args.n_client)]
     split_Y = [labels[split_idx[i]] for i in range(args.n_client)]    
@@ -198,7 +198,20 @@ def split_dataset(features, edge_list, labels, num_vertices, HG, args, device):
                 for _ in range(args.num_layers - 1):
                     split_X[i] = HG.smoothing_with_HGNN(split_X[i])
             else:
-                pass
+                # pass
+                new_edge_list, neighbors = extract_subgraph_with_neighbors(edge_list, split_idx[i])
+                HG = Hypergraph(num_v=node_num + len(neighbors), e_list=new_edge_list)
+                split_point = split_X[i].shape[0]
+                split_X[i] = features[split_idx[i] + neighbors]
+                split_Y[i] = labels[split_idx[i] + neighbors]
+                split_X[i] = HG.smoothing_with_HGNN(split_X[i])    
+                # split_X[i] = HG.smoothing_with_HGNN(split_X[i])
+                # split_X[i] = HG.smoothing_with_HGNN(split_X[i])
+                for _ in range(args.num_layers2 - 1):
+                    
+                    split_X[i] = split_X[i][:split_point]
+                    split_X[i] = torch.cat([split_X[i], new_features[neighbors]], dim=0)
+                    split_X[i] = HG.smoothing_with_HGNN(split_X[i])                               
                      
             split_structure.append(HG)
         

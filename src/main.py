@@ -23,8 +23,8 @@ from dhg.random import set_seed
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--train_ratio', type=float, default=0.1)
-    parser.add_argument('--test_ratio', type=float, default=0.5)
-    parser.add_argument('--val_ratio', type=float, default=0.25)
+    parser.add_argument('--test_ratio', type=float, default=0.4)
+    parser.add_argument('--val_ratio', type=float, default=0.2)
     parser.add_argument('--dname', default='cora')
     parser.add_argument('--method', default='FedHGN')
     parser.add_argument('--local_step', default=3, type=int)
@@ -34,6 +34,8 @@ if __name__ == '__main__':
     parser.add_argument('--dropout', default=0.5, type=float)
     parser.add_argument('--lr', default=0.01, type=float)
     parser.add_argument('--num_layers', default=2,
+                        type=int)  # How many layers of encoder
+    parser.add_argument('--num_layers2', default=1,
                         type=int)  # How many layers of encoder
     parser.add_argument('--hiddens_num', default=16,
                         type=int)  # Encoder hidden units
