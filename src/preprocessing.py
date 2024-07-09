@@ -74,7 +74,7 @@ def load_dataset(args, device):
     elif args.dname == "dblp":
         args.num_features = data["dim_features"]
         features = data["features"]
-        edge_list = data["edge_by_conf"] # +   +data["edge_by_term"] data["edge_by_paper"]
+        edge_list = data["edge_by_term"] + data["edge_by_paper"]
         # print(edge_list)
     elif args.dname == "imdb":
         args.num_features = data["dim_features"]
