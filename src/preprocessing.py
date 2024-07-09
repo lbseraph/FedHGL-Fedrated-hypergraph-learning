@@ -9,13 +9,13 @@ import scipy.sparse as sp
 from collections import Counter
 import torch_geometric
 from dhg import Graph, Hypergraph
-from dhg.data import Cora, Pubmed, Citeseer, Cooking200, News20, Yelp3k, DBLP4k, IMDB4k
+from dhg.data import Cora, Pubmed, Citeseer, Cooking200, News20, Yelp3k, DBLP4k, IMDB4k, CoauthorshipCora
 
 simple_graph_method = ["FedGCN", "FedSage"]
 hypergraph_method = ["FedHGN"]
 
 cite_dataset = ["cora", "pubmed", "citeseer"]
-hypergraph_dataset = ["cooking", "news", "yelp", "dblp", "imdb"]
+hypergraph_dataset = ["cooking", "news", "yelp", "dblp", "imdb", "cora-ca"]
 
 # 去除重复的边和孤立的点
 def clean_edge_list(edge_list):
@@ -52,6 +52,8 @@ def load_dataset(args, device):
         data = DBLP4k()
     elif args.dname == "imdb":
         data = IMDB4k()
+    elif args.dname == "cora-ca":
+        data = CoauthorshipCora()
         
     if args.dname in cite_dataset:
         args.num_features = data["dim_features"]
@@ -67,7 +69,7 @@ def load_dataset(args, device):
         features = torch.eye(data["num_vertices"])
         args.num_features = features.shape[1]
         edge_list = data["edge_list"]
-    elif args.dname in ["news", "yelp"]:
+    elif args.dname in ["news", "yelp", "cora-ca"]:
         args.num_features = data["dim_features"]
         features = data["features"]
         edge_list = data["edge_list"]
@@ -105,7 +107,6 @@ def load_dataset(args, device):
         HG = Hypergraph(num_vertices, edge_list)
     else:
         HG = None
-
     
     print("hyperedge", len(edge_list))
     return features, edge_list, data["labels"], data["num_vertices"], HG

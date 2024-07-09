@@ -1,0 +1,323 @@
+[cora]
+
+python ./src/main.py --dname cora --num_layers 2 --n_client 1 --method FedHGN --global_rounds 600
+
+
+(K 3 gr 200)
+
+python ./src/main.py --dname cora --num_layers 2  --local --n_client 3 --method FedHGN 
+
+
+python ./src/main.py --dname cora --num_layers 2  --local --n_client 3 --method FedGCN 
+
+
+python ./src/main.py --dname cora --num_layers 2  --local --n_client 3 --method FedSage 
+
+
+python ./src/main.py --dname cora --num_layers 2  --n_client 3 --method FedHGN 
+
+
+python ./src/main.py --dname cora --num_layers 2  --n_client 3 --method FedGCN 
+
+
+python ./src/main.py --dname cora --num_layers 2  --n_client 3 --method FedSage 
+
+
+(K 6 gr 200)
+
+python ./src/main.py --dname cora --num_layers 2  --local --n_client 5 --method FedHGN 
+
+
+python ./src/main.py --dname cora --num_layers 2  --local --n_client 6 --method FedGCN 
+
+
+python ./src/main.py --dname cora --num_layers 2  --local --n_client 6 --method FedSage 
+
+
+python ./src/main.py --dname cora --num_layers 2  --n_client 6 --method FedHGN 
+
+
+python ./src/main.py --dname cora --num_layers 2  --n_client 6 --method FedGCN 
+
+
+python ./src/main.py --dname cora --num_layers 2  --n_client 6 --method FedSage 
+
+
+(K 9 gr 200)
+
+python ./src/main.py --dname cora --num_layers 2  --local --n_client 9 --method FedHGN 
+
+
+python ./src/main.py --dname cora --num_layers 2  --local --n_client 9 --method FedGCN 
+
+
+python ./src/main.py --dname cora --num_layers 2  --local --n_client 9 --method FedSage 
+
+
+python ./src/main.py --dname cora --num_layers 2  --n_client 9 --method FedHGN 
+
+
+python ./src/main.py --dname cora --num_layers 2  --n_client 9 --method FedGCN 
+
+
+python ./src/main.py --dname cora --num_layers 2  --n_client 9 --method FedSage 
+
+
+[citeseer]
+
+python ./src/main.py --dname citeseer --num_layers 2  --n_client 1  --method FedHGN --global_rounds 600
+
+
+(c 3 gr 200)
+
+python ./src/main.py --dname citeseer --num_layers 2  --local --n_client 3 --method FedHGN 
+
+
+python ./src/main.py --dname citeseer --num_layers 2  --local --n_client 3 --method FedGCN 
+
+
+python ./src/main.py --dname citeseer --num_layers 2  --local --n_client 3 --method FedSage 
+
+
+python ./src/main.py --dname citeseer --num_layers 2  --n_client 3  --method FedHGN 
+
+
+python ./src/main.py --dname citeseer --num_layers 2  --n_client 3  --method FedGCN 
+
+
+python ./src/main.py --dname citeseer --num_layers 2  --n_client 3  --method FedSage 
+
+
+(c 6 gr 200)
+
+python ./src/main.py --dname citeseer --num_layers 2  --local --n_client 6 --method FedHGN 
+
+
+python ./src/main.py --dname citeseer --num_layers 2  --local --n_client 6 --method FedGCN 
+
+
+python ./src/main.py --dname citeseer --num_layers 2  --local --n_client 6 --method FedSage 
+
+
+python ./src/main.py --dname citeseer --num_layers 2  --n_client 6  --method FedHGN 
+
+
+python ./src/main.py --dname citeseer --num_layers 2  --n_client 6  --method FedGCN 
+
+
+python ./src/main.py --dname citeseer --num_layers 2  --n_client 6  --method FedSage 
+
+
+(c 9 gr 200)
+
+python ./src/main.py --dname citeseer --num_layers 2  --local --n_client 9 --method FedHGN 
+
+
+python ./src/main.py --dname citeseer --num_layers 2  --local --n_client 9 --method FedGCN 
+
+
+python ./src/main.py --dname citeseer --num_layers 2  --local --n_client 9 --method FedSage 
+
+
+python ./src/main.py --dname citeseer --num_layers 2  --n_client 9  --method FedHGN 
+
+
+python ./src/main.py --dname citeseer --num_layers 2  --n_client 9  --method FedGCN 
+
+
+python ./src/main.py --dname citeseer --num_layers 2  --n_client 9  --method FedSage 
+
+
+
+[news20]
+
+python ./src/main.py --dname news --num_layers 2 --n_client 1 --method FedHGN --global_rounds 600 --train_ratio 0.01
+
+
+(c 3)
+
+python ./src/main.py --dname news --num_layers 2  --local --n_client 3  --method FedHGN --train_ratio 0.01
+
+
+python ./src/main.py --dname news --num_layers 2 --local  --n_client 3  --method FedGCN --train_ratio 0.01
+
+
+python ./src/main.py --dname news --num_layers 2  --local --n_client 3  --method FedSage --train_ratio 0.01
+
+
+python ./src/main.py --dname news --num_layers 2  --n_client 3  --method FedHGN --train_ratio 0.01
+
+
+python ./src/main.py --dname news --num_layers 2  --n_client 3  --method FedGCN --train_ratio 0.01
+
+
+python ./src/main.py --dname news --num_layers 2  --n_client 3  --method FedSage --train_ratio 0.01
+
+
+(c 6)
+
+python ./src/main.py --dname news --num_layers 2  --local --n_client 6  --method FedHGN --train_ratio 0.01
+
+
+python ./src/main.py --dname news --num_layers 2 --local  --n_client 6  --method FedGCN --train_ratio 0.01
+
+
+python ./src/main.py --dname news --num_layers 2  --local --n_client 6  --method FedSage --train_ratio 0.01
+
+
+python ./src/main.py --dname news --num_layers 2  --n_client 6  --method FedHGN --train_ratio 0.01
+
+
+python ./src/main.py --dname news --num_layers 2  --n_client 6  --method FedGCN --train_ratio 0.01
+
+
+python ./src/main.py --dname news --num_layers 2  --n_client 6  --method FedSage --train_ratio 0.01
+
+
+(c 9)
+
+python ./src/main.py --dname news --num_layers 2  --local --n_client 9  --method FedHGN --train_ratio 0.01
+
+
+python ./src/main.py --dname news --num_layers 2  --local  --n_client 9  --method FedGCN --train_ratio 0.01
+
+
+python ./src/main.py --dname news --num_layers 2  --local --n_client 9  --method FedSage --train_ratio 0.01
+
+
+python ./src/main.py --dname news --num_layers 2  --n_client 9  --method FedHGN --train_ratio 0.01
+
+
+python ./src/main.py --dname news --num_layers 2  --n_client 9  --method FedGCN --train_ratio 0.01
+
+
+python ./src/main.py --dname news --num_layers 2  --n_client 9  --method FedSage --train_ratio 0.01
+
+
+[imdb4k]
+
+python ./src/main.py --dname imdb --num_layers 2 --n_client 1 --method FedHGN --global_rounds 600
+
+
+(c 3)
+
+python ./src/main.py --dname imdb --num_layers 2  --local --n_client 3  --method FedHGN 
+
+
+python ./src/main.py --dname imdb --num_layers 2 --local  --n_client 3  --method FedGCN 
+
+
+python ./src/main.py --dname imdb --num_layers 2  --local --n_client 3  --method FedSage 
+
+
+python ./src/main.py --dname imdb --num_layers 2  --n_client 3  --method FedHGN 
+
+
+python ./src/main.py --dname imdb --num_layers 2  --n_client 3  --method FedGCN  
+
+
+python ./src/main.py --dname imdb --num_layers 2  --n_client 3  --method FedSage  
+
+
+(c 6)
+
+python ./src/main.py --dname imdb --num_layers 2  --local --n_client 6  --method FedHGN 
+
+
+python ./src/main.py --dname imdb --num_layers 2 --local  --n_client 6  --method FedGCN 
+
+
+python ./src/main.py --dname imdb --num_layers 2  --local --n_client 6  --method FedSage 
+
+
+python ./src/main.py --dname imdb --num_layers 2  --n_client 6  --method FedHGN  
+
+
+python ./src/main.py --dname imdb --num_layers 2  --n_client 6  --method FedGCN  
+
+
+python ./src/main.py --dname imdb --num_layers 2  --n_client 6  --method FedSage  
+
+
+(c 9)
+
+python ./src/main.py --dname imdb --num_layers 2  --local --n_client 9  --method FedHGN 
+
+
+python ./src/main.py --dname imdb --num_layers 2 --local  --n_client 9  --method FedGCN 
+
+
+python ./src/main.py --dname imdb --num_layers 2  --local --n_client 9  --method FedSage 
+
+
+python ./src/main.py --dname imdb --num_layers 2  --n_client 9  --method FedHGN  
+
+
+python ./src/main.py --dname imdb --num_layers 2  --n_client 9  --method FedGCN  
+
+
+python ./src/main.py --dname imdb --num_layers 2  --n_client 9  --method FedSage  
+
+
+
+[dbpl4k]
+
+python ./src/main.py --dname dblp --num_layers 2 --n_client 1 --method FedHGN  --global_rounds 600
+
+
+(c 3)
+
+python ./src/main.py --dname dblp --num_layers 2  --local --n_client 3  --method FedHGN 
+
+
+python ./src/main.py --dname dblp --num_layers 2 --local  --n_client 3  --method FedGCN
+
+
+python ./src/main.py --dname dblp --num_layers 2  --local --n_client 3  --method FedSage
+
+
+python ./src/main.py --dname dblp --num_layers 2  --n_client 3  --method FedHGN 
+
+
+python ./src/main.py --dname dblp --num_layers 2  --n_client 3  --method FedGCN 
+
+
+python ./src/main.py --dname dblp --num_layers 2  --n_client 3  --method FedSage  
+
+(c 6)
+
+python ./src/main.py --dname dblp --num_layers 2  --local --n_client 6  --method FedHGN 
+
+
+python ./src/main.py --dname dblp --num_layers 2 --local  --n_client 6  --method FedGCN 
+
+
+python ./src/main.py --dname dblp --num_layers 2  --local --n_client 6  --method FedSage 
+
+
+python ./src/main.py --dname dblp --num_layers 2  --n_client 6  --method FedHGN  
+
+
+python ./src/main.py --dname dblp --num_layers 2  --n_client 6  --method FedGCN  
+
+
+python ./src/main.py --dname dblp --num_layers 2  --n_client 6  --method FedSage  
+
+(c 9)
+
+python ./src/main.py --dname dblp --num_layers 2  --local --n_client 9  --method FedHGN 
+
+
+python ./src/main.py --dname dblp --num_layers 2 --local  --n_client 9  --method FedGCN 
+
+
+python ./src/main.py --dname dblp --num_layers 2  --local --n_client 9  --method FedSage 
+
+
+python ./src/main.py --dname dblp --num_layers 2  --n_client 9  --method FedHGN 
+
+
+python ./src/main.py --dname dblp --num_layers 2  --n_client 9  --method FedGCN  
+
+
+python ./src/main.py --dname dblp --num_layers 2  --n_client 9  --method FedSage  
