@@ -45,6 +45,10 @@ if __name__ == '__main__':
     # FL setting
     # only use local data
     parser.add_argument('--local', action='store_true')
+    # hyperedge completion
+    parser.add_argument('--HC', action='store_true')
+
+
     # client num
     parser.add_argument('--n_client', default=5, type=int)
     # global round
