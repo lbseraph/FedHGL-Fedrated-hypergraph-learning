@@ -1,110 +1,157 @@
 [news20]
 
 python ./src/main.py --dname news --num_layers 2 --n_client 1 --method FedHGN --global_rounds 600 --train_ratio 0.01
+Final Test Accuracy:  0.7888 0.0073
 
 (c 3)
 
 python ./src/main.py --dname news --num_layers 2  --local --n_client 3  --method FedHGN --train_ratio 0.01
-
+Final Test Accuracy:  0.763 0.012
 
 python ./src/main.py --dname news --num_layers 2   --n_client 3  --method FedHGN --train_ratio 0.01
 Final Test Accuracy:  0.7832 0.0085
 
 python ./src/main.py --dname news --num_layers 2  --n_client 3  --method FedHGN --train_ratio 0.01 --HC
+Final Test Accuracy:  0.7843 0.0077
 
 
 (c 6)
 
 python ./src/main.py --dname news --num_layers 2  --local --n_client 6  --method FedHGN --train_ratio 0.01
-
+Final Test Accuracy:  0.7245 0.0131
 
 python ./src/main.py --dname news --num_layers 2  --n_client 6  --method FedHGN --train_ratio 0.01
 Final Test Accuracy:  0.7755 0.0102
 
 python ./src/main.py --dname news --num_layers 2  --n_client 6  --method FedHGN --train_ratio 0.01  --HC
-
+Final Test Accuracy:  0.7793 0.0099
 
 (c 9)
 
 python ./src/main.py --dname news --num_layers 2  --local --n_client 9  --method FedHGN --train_ratio 0.01
+Final Test Accuracy:  0.7027 0.021
 
 python ./src/main.py --dname news --num_layers 2  --n_client 9  --method FedHGN --train_ratio 0.01
 Final Test Accuracy:  0.7699 0.0153
 
 python ./src/main.py --dname news --num_layers 2  --n_client 9  --method FedHGN --train_ratio 0.01  --HC
+Final Test Accuracy:  0.7746 0.0138
 
 
 [imdb4k]
 
-python ./src/main.py --dname imdb --num_layers 2 --n_client 1 --method FedHGN --global_rounds 600 --train_ratio 0.06
-
+python ./src/main.py --dname imdb --num_layers 2 --n_client 1 --method FedHGN --global_rounds 600 
+Final Test Accuracy:  0.567 0.0144
 
 (c 3)
 
-python ./src/main.py --dname imdb --num_layers 2  --local --n_client 3  --method FedHGN --train_ratio 0.06
+python ./src/main.py --dname imdb --num_layers 2  --local --n_client 3  --method FedHGN 
+Final Test Accuracy:  0.453 0.0206
 
+python ./src/main.py --dname imdb --num_layers 2  --n_client 3  --method FedHGN 
+Final Test Accuracy:  0.4818 0.02
 
-python ./src/main.py --dname imdb --num_layers 2  --n_client 3  --method FedHGN --train_ratio 0.06
+python ./src/main.py --dname imdb --num_layers 2  --n_client 3  --method FedHGN  --HC
+Final Test Accuracy:  0.5596 0.0174
 
-
-python ./src/main.py --dname imdb --num_layers 2  --n_client 3  --method FedHGN --train_ratio 0.06 --HC
 
 (c 6)
 
-python ./src/main.py --dname imdb --num_layers 2  --local --n_client 6  --method FedHGN --train_ratio 0.06
+python ./src/main.py --dname imdb --num_layers 2  --local --n_client 6  --method FedHGN 
+Final Test Accuracy:  0.3854 0.0186
 
+python ./src/main.py --dname imdb --num_layers 2  --n_client 6  --method FedHGN 
+Final Test Accuracy:  0.4289 0.0197
 
-python ./src/main.py --dname imdb --num_layers 2  --n_client 6  --method FedHGN --train_ratio 0.06
-
-
-python ./src/main.py --dname imdb --num_layers 2  --n_client 6  --method FedHGN --train_ratio 0.06 --HC
+python ./src/main.py --dname imdb --num_layers 2  --n_client 6  --method FedHGN  --HC
+Final Test Accuracy:  0.552 0.0175
 
 (c 9)
 
-python ./src/main.py --dname imdb --num_layers 2  --local --n_client 9  --method FedHGN --train_ratio 0.06
+python ./src/main.py --dname imdb --num_layers 2  --local --n_client 9  --method FedHGN 
+Final Test Accuracy:  0.3666 0.0181
 
+python ./src/main.py --dname imdb --num_layers 2  --n_client 9  --method FedHGN 
+Final Test Accuracy:  0.3931 0.0166
 
-python ./src/main.py --dname imdb --num_layers 2  --n_client 9  --method FedHGN --train_ratio 0.06
+python ./src/main.py --dname imdb --num_layers 2  --n_client 9  --method FedHGN  --HC
+Final Test Accuracy:  0.5536 0.018
 
-
-python ./src/main.py --dname imdb --num_layers 2  --n_client 9  --method FedHGN --train_ratio 0.06 --HC
 
 [dbpl4k]
 
-python ./src/main.py --dname dblp --num_layers 2 --n_client 1 --method FedHGN  --global_rounds 600 --train_ratio 0.08
-
+python ./src/main.py --dname dblp --num_layers 2 --n_client 1 --method FedHGN  --global_rounds 600 
+Final Test Accuracy:  0.8558 0.0128
 
 (c 3)
 
-python ./src/main.py --dname dblp --num_layers 2  --local --n_client 3  --method FedHGN --train_ratio 0.08
+python ./src/main.py --dname dblp --num_layers 2  --local --n_client 3  --method FedHGN 
+Final Test Accuracy:  0.7784 0.0232
 
+python ./src/main.py --dname dblp --num_layers 2  --n_client 3  --method FedHGN 
+Final Test Accuracy:  0.7785 0.0323
 
-python ./src/main.py --dname dblp --num_layers 2  --n_client 3  --method FedHGN --train_ratio 0.08
-
-
-python ./src/main.py --dname dblp --num_layers 2  --n_client 3  --method FedHGN --train_ratio 0.08  --HC
-
+python ./src/main.py --dname dblp --num_layers 2  --n_client 3  --method FedHGN   --HC
+Final Test Accuracy:  0.7992 0.0312
 
 (c 6)
 
-python ./src/main.py --dname dblp --num_layers 2  --local --n_client 6  --method FedHGN --train_ratio 0.08
+python ./src/main.py --dname dblp --num_layers 2  --local --n_client 6  --method FedHGN 
+Final Test Accuracy:  0.7498 0.0216
 
+python ./src/main.py --dname dblp --num_layers 2  --n_client 6  --method FedHGN 
+Final Test Accuracy:  0.7534 0.0308
 
-python ./src/main.py --dname dblp --num_layers 2  --n_client 6  --method FedHGN --train_ratio 0.08
-
-
-python ./src/main.py --dname dblp --num_layers 2  --n_client 6  --method FedHGN --train_ratio 0.08   --HC
-
+python ./src/main.py --dname dblp --num_layers 2  --n_client 6  --method FedHGN    --HC
+Final Test Accuracy:  0.7695 0.0234
 
 (c 9)
 
-python ./src/main.py --dname dblp --num_layers 2  --local --n_client 9  --method FedHGN --train_ratio 0.08
+python ./src/main.py --dname dblp --num_layers 2  --local --n_client 9  --method FedHGN 
+Final Test Accuracy:  0.7201 0.0259
+
+python ./src/main.py --dname dblp --num_layers 2  --n_client 9  --method FedHGN 
+Final Test Accuracy:  0.7436 0.031
+
+python ./src/main.py --dname dblp --num_layers 2  --n_client 9  --method FedHGN    --HC
+Final Test Accuracy:  0.7577 0.0346
 
 
-python ./src/main.py --dname dblp --num_layers 2  --n_client 9  --method FedHGN --train_ratio 0.08
+[cora-ca]
 
 
-python ./src/main.py --dname dblp --num_layers 2  --n_client 9  --method FedHGN --train_ratio 0.08   --HC
+python ./src/main.py --dname cora-ca --num_layers 2 --n_client 1 --method FedHGN  --global_rounds 600 
+Final Test Accuracy:  0.6953 0.0216
 
+(c 3)
 
-[cooking200]
+python ./src/main.py --dname cora-ca --num_layers 2  --local --n_client 3  --method FedHGN 
+Final Test Accuracy:  0.5353 0.0234
+
+python ./src/main.py --dname cora-ca --num_layers 2  --n_client 3  --method FedHGN 
+Final Test Accuracy:  0.5831 0.0229
+
+python ./src/main.py --dname cora-ca --num_layers 2  --n_client 3  --method FedHGN   --HC
+Final Test Accuracy:  0.69 0.0248
+
+(c 6)
+
+python ./src/main.py --dname cora-ca --num_layers 2  --local --n_client 6  --method FedHGN 
+Final Test Accuracy:  0.3778 0.0226
+
+python ./src/main.py --dname cora-ca --num_layers 2  --n_client 6  --method FedHGN 
+Final Test Accuracy:  0.4703 0.0322
+
+python ./src/main.py --dname cora-ca --num_layers 2  --n_client 6  --method FedHGN    --HC
+Final Test Accuracy:  0.6726 0.0282
+
+(c 9)
+
+python ./src/main.py --dname cora-ca --num_layers 2  --local --n_client 9  --method FedHGN 
+Final Test Accuracy:  0.3155 0.025
+
+python ./src/main.py --dname cora-ca --num_layers 2  --n_client 9  --method FedHGN 
+Final Test Accuracy:  0.3815 0.0246
+
+python ./src/main.py --dname cora-ca --num_layers 2  --n_client 9  --method FedHGN    --HC
+Final Test Accuracy:  0.6585 0.0291
