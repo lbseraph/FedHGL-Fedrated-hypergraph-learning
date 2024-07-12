@@ -9,12 +9,12 @@ import scipy.sparse as sp
 from collections import Counter
 import torch_geometric
 from dhg import Graph, Hypergraph
-from dhg.data import Cora, Pubmed, Citeseer, Cooking200, News20, Yelp3k, DBLP4k, IMDB4k, CoauthorshipCora
+from dhg.data import Cora, Pubmed, Citeseer, Cooking200, News20, Yelp3k, DBLP4k, IMDB4k, CoauthorshipCora, Github, Facebook
 
 simple_graph_method = ["FedGCN", "FedSage"]
 hypergraph_method = ["FedHGN"]
 
-cite_dataset = ["cora", "pubmed", "citeseer"]
+cite_dataset = ["cora", "pubmed", "citeseer", "github", "facebook"]
 hypergraph_dataset = ["cooking", "news", "yelp", "dblp", "imdb", "cora-ca"]
 
 # 去除重复的边和孤立的点
@@ -54,6 +54,10 @@ def load_dataset(args, device):
         data = IMDB4k()
     elif args.dname == "cora-ca":
         data = CoauthorshipCora()
+    elif args.dname == "github":
+        data = Github()
+    elif args.dname == "facebook":
+        data = Facebook()
         
     if args.dname in cite_dataset:
         args.num_features = data["dim_features"]
@@ -95,10 +99,11 @@ def load_dataset(args, device):
         # print(data["num_vertices"])
         G = Graph(num_vertices, edge_list)
         HG = Hypergraph.from_graph_kHop(G, k=1)
-        edge_list = HG.e_of_group("main")[0]
-        print("hyperedge", len(edge_list))
-        # HG.add_hyperedges_from_feature_kNN(feature=features, k=4)
         # edge_list = HG.e_of_group("main")[0]
+        print("hyperedge", len(edge_list))
+        if args.dname in ["pubmed"]:
+            HG.add_hyperedges_from_feature_kNN(feature=features, k=3)
+        edge_list = HG.e_of_group("main")[0]
     elif args.dname in hypergraph_dataset and args.method in simple_graph_method:
         HG = Hypergraph(num_vertices, edge_list).to(device)
         G = Graph.from_hypergraph_clique(HG, weighted=True, device=device)
@@ -126,7 +131,11 @@ def find_cross_edges(edge_list, split_idx):
         if len(clients) > 1:
             cross_edges.append(edge)
 
-    return cross_edges
+    cross_nodes = set()
+    for edge in edge_list:
+        cross_nodes.update(edge)
+
+    return cross_edges, cross_nodes
 
 def remove_cross_edges(edge_list, sub_edge_list):
 
@@ -156,8 +165,8 @@ def split_dataset(features, edge_list, labels, num_vertices, HG, args, device):
     split_X = [features[split_idx[i]] for i in range(args.n_client)]
     split_Y = [labels[split_idx[i]] for i in range(args.n_client)]    
 
-    cross_edges = find_cross_edges(edge_list, split_idx)
-
+    cross_edges, cross_nodes = find_cross_edges(edge_list, split_idx)
+    # print(len(cross_edges), len(cross_nodes))
     if args.method == "FedSage":
                 
         scale = 0.1

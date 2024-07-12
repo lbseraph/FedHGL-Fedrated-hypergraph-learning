@@ -67,6 +67,8 @@ class Client:
         self.train_accs: list = []
         self.val_losses: list = []
         self.val_accs: list = []
+        self.test_losses: list = []
+        self.test_accs: list = []
         self.best_val_acc = 0
         
         # if args.dname == "news" and args.method == "FedGCN":
@@ -122,6 +124,12 @@ class Client:
                 self.best_val_acc = acc_val
                 torch.save(self.model.state_dict(), f"model/{type(self.model).__name__}_client_{self.rank}.pt")
 
+        loss_test, acc_test = self.local_test()
+        self.test_losses.append(loss_test)
+        self.test_accs.append(acc_test)
+
+
+
     def local_val(self):
         local_val_loss, local_val_acc = test(
             self.model, self.criterion, self.features, self.structure, self.labels, self.idx_val
@@ -141,12 +149,8 @@ class Client:
 
     def get_all_loss_accuracy(self):
         return [
-            np.array(self.train_losses),
-            np.array(self.train_accs),
             np.array(self.test_losses),
             np.array(self.test_accs),
-            np.array(self.val_losses),
-            np.array(self.val_accs),
         ]
 
     def get_rank(self) -> int:
