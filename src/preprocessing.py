@@ -73,7 +73,7 @@ def load_dataset(args, device):
         features = torch.eye(data["num_vertices"])
         args.num_features = features.shape[1]
         edge_list = data["edge_list"]
-    elif args.dname in ["news", "yelp", "cora-ca"]:
+    elif args.dname in ["news", "yelp", "cora-ca", "facebook", "github"]:
         args.num_features = data["dim_features"]
         features = data["features"]
         edge_list = data["edge_list"]
