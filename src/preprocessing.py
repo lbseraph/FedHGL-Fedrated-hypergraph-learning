@@ -60,7 +60,10 @@ def load_dataset(args, device):
         data = Facebook()
         
     if args.dname in cite_dataset:
-        args.num_features = data["dim_features"]
+        if args.dname == "facebook":
+            args.num_features = 4714
+        else:
+            args.num_features = data["dim_features"]
         features = data["features"]
         if args.dname in ["cora", "citeseer"]:
             # 修正数据集，取消归一化
@@ -73,7 +76,7 @@ def load_dataset(args, device):
         features = torch.eye(data["num_vertices"])
         args.num_features = features.shape[1]
         edge_list = data["edge_list"]
-    elif args.dname in ["news", "yelp", "cora-ca", "facebook", "github"]:
+    elif args.dname in ["news", "yelp", "cora-ca"]:
         args.num_features = data["dim_features"]
         features = data["features"]
         edge_list = data["edge_list"]
