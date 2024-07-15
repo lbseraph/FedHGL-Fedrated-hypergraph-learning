@@ -78,6 +78,8 @@ if __name__ == '__main__':
     ### Training loop ###
     runtime_list = []
     Final_test_accuracy = []
+    avg_train_loss = []
+    avg_test_accuracy = []
     for run in tqdm(range(args.runs)):
         # 根据通信范围，获取子图和子图所有节点的邻居构成的扩充图
         features = features_origin.clone()
@@ -136,10 +138,17 @@ if __name__ == '__main__':
         round_test_accuracy = np.average(
             [row[1] for row in results], weights=test_data_weights, axis=0
         )
+        avg_train_loss.append(round_train_loss)
+        avg_test_accuracy.append(round_test_accuracy)
 
-        print(round_train_loss)
-        print(round_test_accuracy)
+    print("Final Test Accuracy: ", round(np.mean(Final_test_accuracy), 4))
+    
+    # 使用 numpy.stack 沿着一个新的轴堆叠这些数组
+    stacked_train_loss = np.stack(avg_train_loss, axis=0) 
+    stacked_test_accuracy = np.stack(avg_test_accuracy, axis=0)
 
- 
-    print("Final Test Accuracy: ", round(np.mean(Final_test_accuracy), 4), round(np.std(Final_test_accuracy), 4))
+    # 计算堆叠后的数组沿着堆叠的轴的均值
+    mean_train_loss = np.mean(stacked_train_loss, axis=0)
+    mean_test_accuracy = np.mean(stacked_test_accuracy, axis=0)
+    print(mean_train_loss, mean_test_accuracy)
   
