@@ -107,6 +107,7 @@ if __name__ == '__main__':
         end_time = time.time()
         runtime_list.append(end_time - start_time)
         
+        train_data_weights = [torch.sum(train_mask) for train_mask in split_train_mask]
         test_data_weights = [torch.sum(test_mask) for test_mask in split_test_mask]
         val_data_weights = [torch.sum(val_mask) for val_mask in split_val_mask]
 
@@ -129,15 +130,15 @@ if __name__ == '__main__':
 
         results = np.array([clients.get_all_loss_accuracy() for clients in server.clients])
         
-        average_test_loss = np.average(
-            [row[0] for row in results], weights=test_data_weights, axis=0
+        round_train_loss = np.average(
+            [row[0] for row in results], weights=train_data_weights, axis=0
         )
-        average_test_accuracy = np.average(
+        round_test_accuracy = np.average(
             [row[1] for row in results], weights=test_data_weights, axis=0
         )
 
-        # print(average_test_loss, len(average_test_loss))
-        # print(average_test_accuracy, len(average_test_accuracy))
+        print(round_train_loss)
+        print(round_test_accuracy)
 
  
     print("Final Test Accuracy: ", round(np.mean(Final_test_accuracy), 4), round(np.std(Final_test_accuracy), 4))

@@ -149,7 +149,7 @@ class Client:
 
     def get_all_loss_accuracy(self):
         return [
-            np.array(self.test_losses),
+            np.array(self.train_losses),
             np.array(self.test_accs),
         ]
 
