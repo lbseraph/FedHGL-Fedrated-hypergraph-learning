@@ -114,7 +114,6 @@ class Client:
                 self.labels,
                 self.idx_train
             )
-            self.train_losses.append(loss_train)
             self.train_accs.append(acc_train)
 
             loss_val, acc_val = self.local_val()
@@ -123,7 +122,7 @@ class Client:
             if (acc_val > self.best_val_acc):
                 self.best_val_acc = acc_val
                 torch.save(self.model.state_dict(), f"model/{type(self.model).__name__}_client_{self.rank}.pt")
-
+        self.train_losses.append(loss_train)
         loss_test, acc_test = self.local_test()
         self.test_losses.append(loss_test)
         self.test_accs.append(acc_test)
