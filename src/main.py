@@ -72,7 +72,7 @@ if __name__ == '__main__':
     set_seed(2025)
     torch.cuda.manual_seed(2025)
 
-    features_origin, edge_list, labels, num_vertices, HG = load_dataset(args, device)
+    features_origin, edge_list, labels, num_vertices, GHG = load_dataset(args, device)
 
     print("Begin Train!")
     ### Training loop ###
@@ -83,7 +83,7 @@ if __name__ == '__main__':
     for run in tqdm(range(args.runs)):
         # 根据通信范围，获取子图和子图所有节点的邻居构成的扩充图
         features = features_origin.clone()
-        split_X, split_Y, split_structure, split_train_mask, split_val_mask, split_test_mask = split_dataset(features, edge_list, labels, num_vertices, HG, args, device)
+        split_X, split_Y, split_structure, split_train_mask, split_val_mask, split_test_mask = split_dataset(features, edge_list, labels, num_vertices, GHG, args, device)
         # 新建联邦学习客户端和服务器
         clients = [
                 Client(
@@ -141,7 +141,7 @@ if __name__ == '__main__':
         avg_train_loss.append(round_train_loss)
         avg_test_accuracy.append(round_test_accuracy)
 
-    print("Final Test Accuracy: ", round(np.mean(Final_test_accuracy), 4))
+    print("Final Test Accuracy: ", round(np.mean(Final_test_accuracy), 4), round(np.std(Final_test_accuracy), 4))
     
     # 使用 numpy.stack 沿着一个新的轴堆叠这些数组
     stacked_train_loss = np.stack(avg_train_loss, axis=0) 

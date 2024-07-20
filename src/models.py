@@ -9,7 +9,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv, SAGEConv
+from torch_geometric.nn import GCNConv, SAGEConv, SGConv
 
 class GCN(nn.Module):
     def __init__(
@@ -123,12 +123,12 @@ class HGNN(nn.Module):
         super(HGNN, self).__init__()
         self.hgcs = torch.nn.ModuleList()
         if layer_num == 1:
-            self.hgcs.append(HGNNConv(in_ch, n_class))
+            self.hgcs.append(LineConv(in_ch, n_class))
         else:
-            self.hgcs.append(HGNNConv(in_ch, n_hid))
+            self.hgcs.append(LineConv(in_ch, n_hid))
             for _ in range(layer_num - 2):
-                self.hgcs.append(HGNNConv(n_hid, n_hid))
-            self.hgcs.append(HGNNConv(n_hid, n_class))
+                self.hgcs.append(LineConv(n_hid, n_hid))
+            self.hgcs.append(LineConv(n_hid, n_class))
         self.act = nn.ReLU(inplace=True)
         self.layer_num = layer_num
         self.drop = nn.Dropout(dropout)
@@ -147,10 +147,38 @@ class HGNN(nn.Module):
         # r = torch.log_softmax(x, dim=-1)
         return torch.log_softmax(x, dim=-1)
 
+class SGC(nn.Module):
+    def __init__(self, in_ch, n_class, n_hid, layer_num=2, dropout=0.5):
+        super(SGC, self).__init__()
+        self.hgcs = torch.nn.ModuleList()
+        if layer_num == 1:
+            self.hgcs.append(LineConv(in_ch, n_class))
+        else:
+            self.hgcs.append(LineConv(in_ch, n_hid))
+            for _ in range(layer_num - 2):
+                self.hgcs.append(LineConv(n_hid, n_hid))
+            self.hgcs.append(LineConv(n_hid, n_class))
+        self.act = nn.ReLU(inplace=True)
+        self.layer_num = layer_num
+        self.drop = nn.Dropout(dropout)
+        
+    def reset_parameters(self):
+        for hgc in self.hgcs:
+            hgc.reset_parameters()
 
-class HGNNConv(nn.Module):
+    def forward(self, x, G):
+        for hgc in self.hgcs[:-1]:
+            x = hgc(x, G)
+            x = self.drop(x)
+        x = self.hgcs[-1](x, G)
+        x = self.act(x)
+
+        # r = torch.log_softmax(x, dim=-1)
+        return torch.log_softmax(x, dim=-1)
+
+class LineConv(nn.Module):
     def __init__(self, in_ft, out_ft):
-        super(HGNNConv, self).__init__()
+        super(LineConv, self).__init__()
         self.lin = nn.Linear(in_ft, out_ft, bias=False)
 
     def reset_parameters(self):
@@ -160,3 +188,4 @@ class HGNNConv(nn.Module):
         # X = hg.smoothing_with_HGNN(X) # No need to use HGNN smoothing because of pre-training
         X = self.lin(X)
         return X
+

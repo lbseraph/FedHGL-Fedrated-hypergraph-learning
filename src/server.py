@@ -1,7 +1,7 @@
 from typing import Any
 
 import torch
-from models import GCN, HGNN, SAGE
+from models import GCN, HGNN, SAGE, SGC
 from client import Client
 
 class Server:
@@ -27,6 +27,15 @@ class Server:
                 dropout=0.5,
                 NumLayers=args.num_layers,
                 cached=False,
+            )
+        elif args.method == "FedCog":
+            # if args.dname == "news":
+            self.model = SGC(
+                in_ch = args.num_features,
+                n_class = args.num_classes,
+                n_hid = args.hiddens_num,
+                dropout=0.5, 
+                layer_num=args.num_layers,
             )
         elif args.method == "FedSage":
             self.model = SAGE(

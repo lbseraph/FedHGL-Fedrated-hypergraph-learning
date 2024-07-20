@@ -3,7 +3,7 @@ from typing import Any
 import numpy as np
 import torch
 
-from models import GCN, HGNN, SAGE
+from models import GCN, HGNN, SAGE, SGC
 
 # from models import HGNN, GCN
 
@@ -38,15 +38,15 @@ class Client:
                 NumLayers=args.num_layers,
                 cached=True,
             )
-            # else:
-            #     self.model = GCN(
-            #         nfeat=args.num_features,
-            #         nhid=args.hiddens_num,
-            #         nclass=args.num_classes,
-            #         dropout=0.5,
-            #         NumLayers=args.num_layers,
-            #         cached=True,
-            #     )
+        elif args.method == "FedCog":
+            # if args.dname == "news":
+            self.model = SGC(
+                in_ch = args.num_features,
+                n_class = args.num_classes,
+                n_hid = args.hiddens_num,
+                dropout=0.5, 
+                layer_num=args.num_layers,
+            )
         elif args.method == "FedSage":
             self.model = SAGE(
                 nfeat=args.num_features,
