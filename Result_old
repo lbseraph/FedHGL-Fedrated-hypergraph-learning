@@ -18,15 +18,14 @@ Final Test Accuracy:  0.7272 0.019
 python ./src/main.py --dname cora --num_layers 2  --n_client 3 --method FedGCN  --HC 
 Final Test Accuracy:  0.8277 0.0139
 
-
 python ./src/main.py --dname cora --num_layers 2 --n_client 3 --method FedHGN 
 Final Test Accuracy:  0.7565 0.0149
 
 python ./src/main.py --dname cora --num_layers 2 --n_client 3 --method FedHGN  --HC 
 Final Test Accuracy:  0.8352 0.0205
 
-
-
+python ./src/main.py --dname cora --num_layers 2 --n_client 3 --method FedCog 
+Final Test Accuracy:  0.8178 0.0199
 
 
 (K 6 gr 200)
@@ -49,6 +48,9 @@ Final Test Accuracy:  0.6514 0.0258
 python ./src/main.py --dname cora --num_layers 2  --n_client 6 --method FedHGN  --HC 
 Final Test Accuracy:  0.8316 0.0137
 
+python ./src/main.py --dname cora --num_layers 2 --n_client 6 --method FedCog 
+Final Test Accuracy:  0.8186 0.0177
+
 (K 9 gr 200)
 
 python ./src/main.py --dname cora --num_layers 2 --n_client 9 --method FedSage 
@@ -70,6 +72,9 @@ Final Test Accuracy:  0.5802 0.0208
 
 python ./src/main.py --dname cora --num_layers 2  --n_client 9 --method FedHGN  --HC 
 Final Test Accuracy:  0.8246 0.0153
+
+python ./src/main.py --dname cora --num_layers 2 --n_client 9 --method FedCog 
+
 
 [citeseer]
 
@@ -96,6 +101,9 @@ Final Test Accuracy:  0.5849 0.0212
 python ./src/main.py --dname citeseer --num_layers 2  --n_client 3  --method FedHGN  --HC 
 Final Test Accuracy:  0.7076 0.0139
 
+python ./src/main.py --dname citeseer --num_layers 2  --n_client 3  --method FedCog 
+Final Test Accuracy:  0.7034 0.0154
+
 (c 6 gr 200)
 
 python ./src/main.py --dname citeseer --num_layers 2 --n_client 6 --method FedSage 
@@ -117,7 +125,8 @@ Final Test Accuracy:  0.478 0.0182
 python ./src/main.py --dname citeseer --num_layers 2  --n_client 6  --method FedHGN  --HC 
 Final Test Accuracy:  0.7074 0.0212
 
-
+python ./src/main.py --dname citeseer --num_layers 2  --n_client 6  --method FedCog 
+Final Test Accuracy:  0.708 0.0192
 
 (c 9 gr 200)
 
@@ -134,8 +143,6 @@ Final Test Accuracy:  0.618 0.0182
 
 python ./src/main.py --dname citeseer --num_layers 2  --n_client 9  --method FedGCN  --HC 
 Final Test Accuracy:  0.7014 0.0188
-
-
 
 python ./src/main.py --dname citeseer --num_layers 2 --n_client 9 --method FedHGN 
 Final Test Accuracy:  0.4165 0.0209
