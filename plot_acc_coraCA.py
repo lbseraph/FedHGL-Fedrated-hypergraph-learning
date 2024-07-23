@@ -271,6 +271,12 @@ if __name__ == '__main__':
     plt.plot(row_x, y2, label='Local HGNN', ls='-.', c='#ff7f0e')
 
     row_x = []
+    for i in range(len(y5)):
+        row_x.append(i)
+    plt.plot(row_x, y5, label='Local HGNN \nwith HC', ls='-.', c='c')
+
+
+    row_x = []
     for i in range(len(y3)):
         row_x.append(i)
     plt.plot(row_x, y3, label='FedHGN w/o HC', ls='--', c='#2ca02c')
@@ -280,15 +286,11 @@ if __name__ == '__main__':
         row_x.append(i)
     plt.plot(row_x, y4, label='FedHGN with HC', ls='-', c='#1f77b4')
 
-    row_x = []
-    for i in range(len(y5)):
-        row_x.append(i)
-    plt.plot(row_x, y5, label='Local HGNN \nwith HC', ls='-.')
 
-    plt.ylim(0, 0.8)
+    plt.ylim(0, 0.7)
     plt.xlim(0, 150)
     plt.legend(loc='lower right')
-    plt.ylabel('Test Accuracy(%)')
+    plt.ylabel('Test Accuracy')
     plt.xlabel('Communication Rounds')
     # plt.ylabel('故障分类准确率(%)')
     # plt.xlabel('训练迭代周期')
