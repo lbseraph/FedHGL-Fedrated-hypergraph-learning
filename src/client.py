@@ -6,6 +6,7 @@ import torch
 from models import GCN, HGNN, SAGE, SGC
 
 # from models import HGNN, GCN
+# test
 
 class Client:
     def __init__(
