@@ -17,7 +17,7 @@ hypergraph_method = ["FedHGN"]
 simple_dataset = ["cora", "pubmed", "citeseer", "github", "facebook"]
 hypergraph_dataset = ["cooking", "news", "yelp", "dblp", "imdb", "cora-ca"]
 
-# 去除重复的边和孤立的点
+# Remove duplicate edges and isolated points
 def clean_edge_list(edge_list):
     unique_edges = set()
     cleaned_edge_list = []
@@ -33,7 +33,7 @@ def clean_edge_list(edge_list):
 
     return cleaned_edge_list
 
-# 读取数据集
+# Reading the dataset
 def load_dataset(args, device):
     
     if args.dname == "cora":
@@ -66,10 +66,10 @@ def load_dataset(args, device):
             args.num_features = data["dim_features"]
         features = data["features"]
         if args.dname in ["cora", "citeseer"]:
-            # 修正数据集，取消归一化
-            # 查找小于0或大于1的元素  
+            # Correct the dataset and cancel normalization
+            # Find elements less than 0 or greater than 1 
             mask = torch.gt(features, 0) & torch.lt(features, 1.1)
-            # # 使用布尔索引选出满足条件的元素
+            # # Use Boolean indexing to select elements that meet a condition
             features[mask] = 1.0
         edge_list = data["edge_list"]
     elif args.dname == "cooking":
@@ -120,11 +120,11 @@ def load_dataset(args, device):
     else:
         GHG = None
     
-    print("hyperedge", len(edge_list))
+    print("hyperedge222", len(edge_list))
     return features, edge_list, data["labels"], data["num_vertices"], GHG
 
 def find_cross_edges(edge_list, split_idx):
-    # 创建一个节点到客户端的映射
+    # Create a node-to-client mapping
     node_to_client = {}
     for client_id, nodes in enumerate(split_idx):
         for node in nodes:
@@ -132,9 +132,9 @@ def find_cross_edges(edge_list, split_idx):
 
     cross_edges = []
     for edge in edge_list:
-        # 获取边的所有节点所属的客户端
+        # Get the clients to which all nodes of the edge belong
         clients = {node_to_client[node] for node in edge}
-        # 如果边跨越多个客户端，则将其加入 cross_edges
+        # If the edge spans multiple clients, add it to cross_edges
         if len(clients) > 1:
             cross_edges.append(edge)
 
@@ -146,13 +146,13 @@ def find_cross_edges(edge_list, split_idx):
 
 def remove_cross_edges(edge_list, sub_edge_list):
 
-    # 将sub_edge_list转换为集合以便快速查找
+    # Convert sub_edge_list to a set for fast lookup
     sub_edge_set = set(sub_edge_list)
-    # 从edge_list中删除sub_edge_list中的边
+    # Remove the edges in sub_edge_list from edge_list
     remaining_edges = [edge for edge in edge_list if edge not in sub_edge_set]
     return remaining_edges
 
-# 读取数据集
+# Reading the dataset
 def split_dataset(features, edge_list, labels, num_vertices, GHG, args, device): 
 
     split_idx = label_dirichlet_partition(
@@ -201,7 +201,7 @@ def split_dataset(features, edge_list, labels, num_vertices, GHG, args, device):
     split_Y = [labels[split_idx[i]] for i in range(args.n_client)]    
 
     cross_edges, cross_nodes = find_cross_edges(edge_list, split_idx)
-    # print(len(cross_edges), len(cross_nodes))
+    print("crosss", len(cross_edges), len(cross_nodes))
     if args.method == "FedSage":
         scale = 0.1
         G_noise = np.random.normal(loc=0, scale = scale, size=features.shape).astype(np.float32)
@@ -224,7 +224,7 @@ def split_dataset(features, edge_list, labels, num_vertices, GHG, args, device):
 
                 if args.method == "FedGCN":
                     for _ in range(args.num_layers - 1):
-                        # 从其它客户端处获取2跳以上邻居的信息，但是不能跨客户端
+                        # Get information about neighbors more than 2 hops away from other clients, but not across clients
                         # print("???", len(edge_list))
                         sub_edge = remove_cross_edges(edge_list, cross_edges)
                         # print("???", len(sub_edge))
@@ -271,51 +271,51 @@ def split_dataset(features, edge_list, labels, num_vertices, GHG, args, device):
 
     return split_X, split_Y, split_structure, split_train_mask, split_val_mask, split_test_mask
 
-# 提取仅包含客户端自身节点的子图
+# Extract a subgraph containing only the client's own nodes
 def extract_subgraph(edge_list, idx_list):
-    # 创建一个映射，将idx_list中的节点映射到新的编号
+    # Create a mapping that maps the nodes in idx_list to new numbers
     # print(edge_list)
     old_to_new = {node: i for i, node in enumerate(idx_list)}
-    new_edge_list = []  # 新图的边集
-    # 遍历原图中的每条边
+    new_edge_list = []  # The edge set of the new graph
+    # Traverse each edge in the original graph
     for edge in edge_list:
-        # 如果所有节点都在idx_list中，则添加到新图中
+        # If all nodes are in idx_list, add them to the new graph
         if all(node in old_to_new for node in edge):
-            # 将旧节点编号映射到新编号
+            # Map old node numbers to new numbers
             new_edge_list.append(tuple(old_to_new[node] for node in edge))
-        # 如果只有部分节点在idx_list中，则只添加部分节点(剩余节点大于等于2)
+        # If only some nodes are in idx_list, only some nodes are added (the remaining nodes are greater than or equal to 2)
         elif sum(node in old_to_new for node in edge) >= 2:
             new_edge_list.append(tuple(old_to_new[node] for node in edge if node in old_to_new))
     
     return new_edge_list
 
-# 提取包含包含客户端自身节点，加上客户端边界节点邻居节点的子图
+# Extract a subgraph containing the client's own nodes and the neighbor nodes of the client's border nodes
 def extract_subgraph_with_neighbors(edge_list, idx_list, sub_edge_list=None):
 
-    # 将idx_list转换为集合，以便快速检查元素
+    # Convert idx_list to a set so you can quickly check for elements
     idx_set = set(idx_list)
     included_nodes = set(idx_list)
     neighbors = set()
 
-    # 遍历所有边以找到所有邻居
+    # Traverse all edges to find all neighbors
     if sub_edge_list is None:
         for edge in edge_list:
             if any(node in idx_set for node in edge):
                 neighbors.update(edge)
     else:
         for edge in sub_edge_list :
-            # 不能是跨客户端边（在多层FedGCN中）
+            # Cannot be cross-client edge (in multi-layer FedGCN)
             if any(node in idx_set for node in edge):
                 neighbors.update(edge)
     
-    # 排除已经在idx_list中的节点，只保留真正的邻居节点
+    # Exclude nodes that are already in idx_list and keep only real neighbor nodes
     neighbors.difference_update(idx_set)
     included_nodes.update(neighbors)
     
-    # 创建新的节点映射，idx_list中的节点优先
+    # Create a new node mapping, with nodes in idx_list taking priority
     old_to_new = {node: i for i, node in enumerate(list(idx_list) + list(neighbors))}
     
-    # 创建新的边集，使用新的节点编号
+    # Create a new edge set, using the new node numbers
     new_edge_list = []
     for edge in edge_list:
         if all(node in included_nodes for node in edge) and any(node in idx_set for node in edge):

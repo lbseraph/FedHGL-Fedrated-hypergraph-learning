@@ -50,7 +50,7 @@ python ./src/main.py --dname cora-ca --num_layers 2  --n_client 9  --method FedH
 Final Test Accuracy:  0.6585 0.0291
 
 
-[dbpl4k]
+[dblp4k]
 
 python ./src/main.py --dname dblp --num_layers 2 --n_client 1 --method FedHGN  --global_rounds 600 --train_ratio 0.06
 Final Test Accuracy:  0.8515 0.0187

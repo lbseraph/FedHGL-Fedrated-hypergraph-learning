@@ -6,8 +6,8 @@ from scipy.ndimage import gaussian_filter1d
 from matplotlib import rcParams
 
 config = {
-    "font.family":'Times New Roman',  # 设置字体类型
-    "axes.unicode_minus": False, #解决负号无法显示的问题
+    "font.family":'Times New Roman',  # Set the font type
+    "axes.unicode_minus": False, # Solve the problem that the negative sign cannot be displayed
     'font.size': 16
 }
 rcParams.update(config)
@@ -253,5 +253,5 @@ if __name__ == '__main__':
     # plt.ylabel('故障分类准确率(%)')
     # plt.xlabel('训练迭代周期')
     plt.tick_params(axis='x', which='both', bottom=False)
-    plt.rcParams['savefig.dpi'] = 300 # 图片像素
+    plt.rcParams['savefig.dpi'] = 300 # Image pixels
     plt.show()

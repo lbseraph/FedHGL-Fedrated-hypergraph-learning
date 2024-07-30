@@ -81,10 +81,10 @@ if __name__ == '__main__':
     avg_train_loss = []
     avg_test_accuracy = []
     for run in tqdm(range(args.runs)):
-        # 根据通信范围，获取子图和子图所有节点的邻居构成的扩充图
+        # According to the communication range, obtain the subgraph and the extended graph consisting of the neighbors of all nodes in the subgraph
         features = features_origin.clone()
         split_X, split_Y, split_structure, split_train_mask, split_val_mask, split_test_mask = split_dataset(features, edge_list, labels, num_vertices, GHG, args, device)
-        # 新建联邦学习客户端和服务器
+        # Create a new federated learning client and server
         clients = [
                 Client(
                     rank = i,
@@ -143,11 +143,11 @@ if __name__ == '__main__':
 
     print("Final Test Accuracy: ", round(np.mean(Final_test_accuracy), 4), round(np.std(Final_test_accuracy), 4))
     
-    # 使用 numpy.stack 沿着一个新的轴堆叠这些数组
+    # Use numpy.stack to stack these arrays along a new axis
     stacked_train_loss = np.stack(avg_train_loss, axis=0) 
     stacked_test_accuracy = np.stack(avg_test_accuracy, axis=0)
 
-    # 计算堆叠后的数组沿着堆叠的轴的均值
+    # Computes the mean of the stacked array along the axis of stacking
     mean_train_loss = np.mean(stacked_train_loss, axis=0)
     mean_test_accuracy = np.mean(stacked_test_accuracy, axis=0)
     print(mean_train_loss, mean_test_accuracy)
