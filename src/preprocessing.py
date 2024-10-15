@@ -12,7 +12,7 @@ from dhg import Graph, Hypergraph
 from dhg.data import Cora, Pubmed, Citeseer, Cooking200, News20, Yelp3k, DBLP4k, IMDB4k, CoauthorshipCora, Github, Facebook
 
 simple_graph_method = ["FedGCN", "FedSage", "FedCog"]
-hypergraph_method = ["FedHGN"]
+hypergraph_method = ["FedHGN", "HNHN", "HyperGCN"]
 
 simple_dataset = ["cora", "pubmed", "citeseer", "github", "facebook"]
 hypergraph_dataset = ["cooking", "news", "yelp", "dblp", "imdb", "cora-ca"]
@@ -120,7 +120,6 @@ def load_dataset(args, device):
     else:
         GHG = None
     
-    print("hyperedge222", len(edge_list))
     return features, edge_list, data["labels"], data["num_vertices"], GHG
 
 def find_cross_edges(edge_list, split_idx):
@@ -211,6 +210,9 @@ def split_dataset(features, edge_list, labels, num_vertices, GHG, args, device):
         
         node_num = len(split_idx[i])
         train_mask, test_mask, val_mask = rand_train_test_idx(node_num, args.train_ratio, args.val_ratio, args.test_ratio) 
+        split_train_mask.append(train_mask)
+        split_val_mask.append(val_mask)
+        split_test_mask.append(test_mask)
         if args.method in simple_graph_method:
             if not args.HC or args.method == "FedCog":
                 new_edge_list = extract_subgraph(edge_list, split_idx[i])
@@ -236,18 +238,18 @@ def split_dataset(features, edge_list, labels, num_vertices, GHG, args, device):
                     
             split_structure.append(Graph(num_v=node_num, e_list=new_edge_list, device=device).A)
 
-        elif args.method == "FedHGN":
-            new_edge_list = extract_subgraph(edge_list, split_idx[i])
+        elif args.method in hypergraph_method:
 
-            GHG = Hypergraph(num_v=node_num, e_list=new_edge_list)
             # old_split_idx = split_idx
 
             if not args.HC:
+                new_edge_list = extract_subgraph(edge_list, split_idx[i])
                 GHG = Hypergraph(num_v=node_num, e_list=new_edge_list)
                 # pre-training process
-                split_X[i] = GHG.smoothing_with_HGNN(split_X[i])
-                for _ in range(args.num_layers - 1):
+                if args.method == "FedHGN":
                     split_X[i] = GHG.smoothing_with_HGNN(split_X[i])
+                    for _ in range(args.num_layers - 1):
+                        split_X[i] = GHG.smoothing_with_HGNN(split_X[i])
             else:
                 # pass
                 new_edge_list, neighbors = extract_subgraph_with_neighbors(edge_list, split_idx[i])
@@ -264,10 +266,10 @@ def split_dataset(features, edge_list, labels, num_vertices, GHG, args, device):
                     split_X[i] = GHG.smoothing_with_HGNN(split_X[i])                               
                      
             split_structure.append(GHG)
-        
-        split_train_mask.append(train_mask)
-        split_val_mask.append(val_mask)
-        split_test_mask.append(test_mask)
+        elif args.method == "HNHN":
+            pass
+
+
 
     return split_X, split_Y, split_structure, split_train_mask, split_val_mask, split_test_mask
 
@@ -395,6 +397,7 @@ def generate_bool_tensor(length, true_count, mask=None):
     
     return tensor
 
+# Randomly generate training, validation, and test masks
 def rand_train_test_idx(node_num, train_ratio, val_ratio, test_ratio):
 
     trainCount = node_num * train_ratio

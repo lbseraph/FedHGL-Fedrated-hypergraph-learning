@@ -1,7 +1,7 @@
 from typing import Any
 
 import torch
-from models import GCN, HGNN, SAGE, SGC
+from models import GCN, HGNN, SAGE, SGC, HNHN, HyperGCN
 from client import Client
 
 class Server:
@@ -13,6 +13,22 @@ class Server:
     ):
         if args.method == "FedHGN":
             self.model = HGNN(
+                in_ch = args.num_features,
+                n_class = args.num_classes,
+                n_hid = args.hiddens_num,
+                dropout=0.5, 
+                layer_num=args.num_layers,
+            )
+        elif args.method == "HNHN":
+            self.model = HNHN(
+                in_ch = args.num_features,
+                n_class = args.num_classes,
+                n_hid = args.hiddens_num,
+                dropout=0.5, 
+                layer_num=args.num_layers,
+            )
+        elif args.method == "HyperGCN":
+            self.model = HyperGCN(
                 in_ch = args.num_features,
                 n_class = args.num_classes,
                 n_hid = args.hiddens_num,

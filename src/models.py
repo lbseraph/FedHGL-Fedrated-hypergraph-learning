@@ -10,6 +10,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, SAGEConv, SGConv
+from dhg import Graph
 
 class GCN(nn.Module):
     def __init__(
@@ -137,11 +138,11 @@ class HGNN(nn.Module):
         for hgc in self.hgcs:
             hgc.reset_parameters()
 
-    def forward(self, x, G):
+    def forward(self, x, _G):
         for hgc in self.hgcs[:-1]:
-            x = hgc(x, G)
+            x = hgc(x)
             x = self.drop(x)
-        x = self.hgcs[-1](x, G)
+        x = self.hgcs[-1](x)
         x = self.act(x)
 
         # r = torch.log_softmax(x, dim=-1)
@@ -166,15 +167,93 @@ class SGC(nn.Module):
         for hgc in self.hgcs:
             hgc.reset_parameters()
 
-    def forward(self, x, G):
+    def forward(self, x, _G):
         for hgc in self.hgcs[:-1]:
-            x = hgc(x, G)
+            x = hgc(x)
             x = self.drop(x)
-        x = self.hgcs[-1](x, G)
+        x = self.hgcs[-1](x)
         x = self.act(x)
 
         # r = torch.log_softmax(x, dim=-1)
         return torch.log_softmax(x, dim=-1)
+
+class HNHN(nn.Module):
+    def __init__(self, in_ch, n_class, n_hid, layer_num=2, dropout=0.5):
+        super(HNHN, self).__init__()
+        self.hgcs = torch.nn.ModuleList()
+        if layer_num == 1:
+            self.hgcs.append(HNHNConv(in_ch, n_class, drop_rate=dropout, is_last=True))
+        else:
+            self.hgcs.append(HNHNConv(in_ch, n_hid, drop_rate=dropout, is_last=False))
+            for _ in range(layer_num - 2):
+                self.hgcs.append(HNHNConv(n_hid, n_hid, drop_rate=dropout, is_last=False))
+            self.hgcs.append(HNHNConv(n_hid, n_class, drop_rate=dropout, is_last=True))
+        
+    def reset_parameters(self):
+        for hgc in self.hgcs:
+            hgc.reset_parameters()
+
+    def forward(self, x, G):
+        for hgc in self.hgcs[:-1]:
+            x = hgc(x, G)
+        x = self.hgcs[-1](x, G)
+
+        # r = torch.log_softmax(x, dim=-1)
+        return torch.log_softmax(x, dim=-1)
+
+
+class HNHNConv(nn.Module):
+    r"""The HNHN convolution layer proposed in `HNHN: Hypergraph Networks with Hyperedge Neurons <https://arxiv.org/pdf/2006.12278.pdf>`_ paper (ICML 2020).
+
+    Args:
+        ``in_channels`` (``int``): :math:`C_{in}` is the number of input channels.
+        ``out_channels`` (int): :math:`C_{out}` is the number of output channels.
+        ``bias`` (``bool``): If set to ``False``, the layer will not learn the bias parameter. Defaults to ``True``.
+        ``use_bn`` (``bool``): If set to ``True``, the layer will use batch normalization. Defaults to ``False``.
+        ``drop_rate`` (``float``): If set to a positive number, the layer will use dropout. Defaults to ``0.5``.
+        ``is_last`` (``bool``): If set to ``True``, the layer will not apply the final activation and dropout functions. Defaults to ``False``.
+    """
+
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        use_bn: bool = True,
+        drop_rate: float = 0.5,
+        is_last: bool = False,
+    ):
+        super().__init__()
+        self.is_last = is_last
+        self.bn = nn.BatchNorm1d(out_channels) if use_bn else None
+        self.act = nn.ReLU(inplace=True)
+        self.drop = nn.Dropout(drop_rate)
+        self.theta_v2e = LineConv(in_channels, out_channels)
+        self.theta_e2v = LineConv(out_channels, out_channels)
+
+    def reset_parameters(self):
+        self.theta_v2e.reset_parameters()
+        self.theta_e2v.reset_parameters()
+
+    def forward(self, X, hg) -> torch.Tensor:
+        r"""The forward function.
+
+        Args:
+            X (``torch.Tensor``): Input vertex feature matrix. Size :math:`(|\mathcal{V}|, C_{in})`.
+            hg (``dhg.Hypergraph``): The hypergraph structure that contains :math:`|\mathcal{V}|` vertices.
+        """
+        # v -> e
+        X = self.theta_v2e(X)
+        Y = self.act(hg.v2e(X, aggr="mean"))
+        # e -> v
+        Y = self.theta_e2v(Y)
+        X = hg.e2v(Y, aggr="mean")
+        if not self.is_last:
+            X = self.act(X)
+            if self.bn is not None:
+                X = self.bn(X)
+            X = self.drop(X)
+        return X
+
 
 class LineConv(nn.Module):
     def __init__(self, in_ft, out_ft):
@@ -184,8 +263,90 @@ class LineConv(nn.Module):
     def reset_parameters(self):
         self.lin.reset_parameters()
 
-    def forward(self, X, _hg):
+    def forward(self, X):
         # X = hg.smoothing_with_HGNN(X) # No need to use HGNN smoothing because of pre-training
         X = self.lin(X)
+        return X
+
+class HyperGCN(nn.Module):
+    def __init__(self, in_ch, n_class, n_hid, layer_num=2, dropout=0.5):
+        super(HyperGCN, self).__init__()
+        self.hgcs = torch.nn.ModuleList()
+        if layer_num == 1:
+            self.hgcs.append(HyperGCNConv(in_ch, n_class, drop_rate=dropout, is_last=True))
+        else:
+            self.hgcs.append(HyperGCNConv(in_ch, n_hid, drop_rate=dropout, is_last=False))
+            for _ in range(layer_num - 2):
+                self.hgcs.append(HyperGCNConv(n_hid, n_hid, drop_rate=dropout, is_last=False))
+            self.hgcs.append(HyperGCNConv(n_hid, n_class, drop_rate=dropout, is_last=True))
+        
+    def reset_parameters(self):
+        for hgc in self.hgcs:
+            hgc.reset_parameters()
+
+    def forward(self, x, G):
+        for hgc in self.hgcs[:-1]:
+            x = hgc(x, G)
+        x = self.hgcs[-1](x, G)
+
+        # r = torch.log_softmax(x, dim=-1)
+        return torch.log_softmax(x, dim=-1)
+
+class HyperGCNConv(nn.Module):
+    r"""The HyperGCN convolution layer proposed in `HyperGCN: A New Method of Training Graph Convolutional Networks on Hypergraphs <https://papers.nips.cc/paper/2019/file/1efa39bcaec6f3900149160693694536-Paper.pdf>`_ paper (NeurIPS 2019).
+
+    Args:
+        ``in_channels`` (``int``): :math:`C_{in}` is the number of input channels.
+        ``out_channels`` (int): :math:`C_{out}` is the number of output channels.
+        ``use_mediator`` (``str``): Whether to use mediator to transform the hyperedges to edges in the graph. Defaults to ``False``.
+        ``bias`` (``bool``): If set to ``False``, the layer will not learn the bias parameter. Defaults to ``True``.
+        ``use_bn`` (``bool``): If set to ``True``, the layer will use batch normalization. Defaults to ``False``.
+        ``drop_rate`` (``float``): If set to a positive number, the layer will use dropout. Defaults to ``0.5``.
+        ``is_last`` (``bool``): If set to ``True``, the layer will not apply the final activation and dropout functions. Defaults to ``False``.
+    """
+
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        use_mediator: bool = False,
+        bias: bool = False,
+        use_bn: bool = True,
+        drop_rate: float = 0.5,
+        is_last: bool = False,
+    ):
+        super().__init__()
+        self.is_last = is_last
+        self.bn = nn.BatchNorm1d(out_channels) if use_bn else None
+        self.use_mediator = use_mediator
+        self.act = nn.ReLU(inplace=True)
+        self.drop = nn.Dropout(drop_rate)
+        self.theta = nn.Linear(in_channels, out_channels, bias=bias)
+
+    def reset_parameters(self):
+        self.theta.reset_parameters()
+
+    def forward(
+        self, X: torch.Tensor, hg,
+    ) -> torch.Tensor:
+        r"""The forward function.
+
+        Args:
+            ``X`` (``torch.Tensor``): Input vertex feature matrix. Size :math:`(N, C_{in})`.
+            ``hg`` (``dhg.Hypergraph``): The hypergraph structure that contains :math:`N` vertices.
+            ``cached_g`` (``dhg.Graph``): The pre-transformed graph structure from the hypergraph structure that contains :math:`N` vertices. If not provided, the graph structure will be transformed for each forward time. Defaults to ``None``.
+        """
+        X = self.theta(X)
+
+        g = Graph.from_hypergraph_hypergcn(
+            hg, X, self.use_mediator, device=X.device
+        )
+        X = g.smoothing_with_GCN(X)
+
+        if not self.is_last:
+            X = self.act(X)
+            if self.bn is not None:
+                X = self.bn(X)
+            X = self.drop(X)
         return X
 
