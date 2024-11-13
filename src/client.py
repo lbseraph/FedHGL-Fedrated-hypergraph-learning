@@ -72,7 +72,7 @@ class Client:
                 dropout=0.5,
                 NumLayers=args.num_layers,
             )
-        
+        self.n_client = args.n_client
         self.model = self.model.to(device)
 
         self.rank = rank  # rank = client ID
@@ -138,7 +138,7 @@ class Client:
             self.val_accs.append(acc_val)
             if (acc_val > self.best_val_acc):
                 self.best_val_acc = acc_val
-                torch.save(self.model.state_dict(), f"model/{type(self.model).__name__}_client_{self.rank}.pt")
+                torch.save(self.model.state_dict(), f"model/{type(self.model).__name__}_client_{self.n_client}_{self.rank}.pt")
         self.train_losses.append(loss_train)
         loss_test, acc_test = self.local_test()
         self.test_losses.append(loss_test)
