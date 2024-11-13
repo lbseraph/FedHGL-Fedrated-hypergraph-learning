@@ -57,6 +57,7 @@ if __name__ == '__main__':
     parser.add_argument("-iid_b", "--iid_beta", default=10000, type=float)
     # act as safety mode
     parser.add_argument('--safety', action='store_true')
+    parser.add_argument("--epsilon", default=10, type=float)
 
     args = parser.parse_args()
 

@@ -67,8 +67,8 @@ def load_dataset(args, device):
         features = data["features"]
         if args.dname in ["cora", "citeseer"]:
             # Correct the dataset and cancel normalization
-            # Find elements less than 0 or greater than 1 
-            mask = torch.gt(features, 0) & torch.lt(features, 1.1)
+            # Find elements greater than 0
+            mask = torch.gt(features, 0)
             # # Use Boolean indexing to select elements that meet a condition
             features[mask] = 1.0
         edge_list = data["edge_list"]
@@ -80,6 +80,11 @@ def load_dataset(args, device):
         args.num_features = data["dim_features"]
         features = data["features"]
         edge_list = data["edge_list"]
+        if args.dname in ["cora-ca"]:
+            mask = torch.gt(features, 0)
+            features[mask] = 1.0
+            # mask = torch.eq(features, 0)
+            # features[mask] = -1.0
     elif args.dname == "dblp":
         args.num_features = data["dim_features"]
         features = data["features"]
@@ -103,9 +108,9 @@ def load_dataset(args, device):
         G = Graph(num_vertices, edge_list)
         HG = Hypergraph.from_graph_kHop(G, k=1)
         # edge_list = HG.e_of_group("main")[0]
-        print("hyperedge", len(edge_list))
-        if args.dname in ["pubmed"]:
-            HG.add_hyperedges_from_feature_kNN(feature=features, k=3)
+        # print("hyperedge", len(edge_list))
+        # if args.dname in ["pubmed"]:
+        #     HG.add_hyperedges_from_feature_kNN(feature=features, k=3)
         edge_list = HG.e_of_group("main")[0]
         GHG = HG
     elif args.dname in hypergraph_dataset and args.method in simple_graph_method:
@@ -151,6 +156,103 @@ def remove_cross_edges(edge_list, sub_edge_list):
     remaining_edges = [edge for edge in edge_list if edge not in sub_edge_set]
     return remaining_edges
 
+def add_laplace_noise(feature, epsilon, neighbors, unsafe_neighbors):
+    """
+    给输入的二维tensor的每个元素添加自定义比例的拉普拉斯噪声。
+    
+    参数:
+    - tensor: 输入的二维tensor (torch.Tensor)
+    - epsilon: 隐私预算，用于计算基础噪声强度
+    
+    返回:
+    - 带噪声的二维tensor (torch.Tensor)
+    """
+    # 获取tensor的大小
+    shape = feature.shape
+    
+    # 初始化与输入tensor形状相同的噪声tensor
+    noisy_tensor = feature.clone()
+
+    for j in range(shape[1]):  # 遍历每一列
+        # 计算该列的最大值与最小值的差
+        col_max = feature[:, j].max().item()
+        col_min = feature[:, j].min().item()
+        delta = col_max - col_min
+        
+        # 拉普拉斯噪声的比例参数 b = delta / epsilon
+        b = delta / epsilon
+        
+        # 生成与该列元素数量相同的拉普拉斯噪声
+        noise = np.random.laplace(loc=0.0, scale=b, size=shape[0])
+        
+        # 将生成的噪声转换为torch tensor
+        noise_tensor = torch.tensor(noise, dtype=feature.dtype)
+        # noisy_tensor[:, j] = feature[:, j] + noisse_tensor
+        for i, neighbor in enumerate(neighbors):
+            if neighbor in unsafe_neighbors:
+                noisy_tensor[i, j] = feature[i, j] + noise_tensor[i]
+
+    return noisy_tensor
+
+def rand_response(feature, epsilon, neighbors, unsafe_neighbors):
+    p = (np.exp(epsilon) - 1) / (np.exp(epsilon) + 1)
+
+    # 定义扰动函数
+    def perturb_value(value):
+        # 生成一个随机数来决定是否按 p 概率进行扰动
+        if np.random.rand() < p:
+            # 概率 p 的情况下，返回 (value - 0.5) * (1 / p)
+            return (value - 0.5) * (1 / p)
+        else:
+            # 概率 (1 - p) 的情况下随机选择以下两种结果之一
+            if np.random.rand() < 0.5:
+                return 1 / (2 * p)
+            else:
+                return - 1 / (2 * p)
+
+    # 对输入 tensor 的每个元素进行扰动
+    perturbed_feature = []
+    for i, neighbor in enumerate(neighbors):
+        # print(i, neighbor)
+        # perturbed_feature.append([perturb_value(v.item()) for v in feature[i]])
+        if neighbor in unsafe_neighbors:
+            perturbed_feature.append([perturb_value(v.item()) for v in feature[i]])
+        else:
+            perturbed_feature.append(feature[i].tolist())
+
+    perturbed_feature = torch.tensor(
+        perturbed_feature,dtype=feature.dtype
+    )
+    
+    # 重新调整形状为原始 tensor 的形状
+    return perturbed_feature
+
+# Updating the function to handle `split_idx` as a list of lists where `split_idx[i]` represents all nodes of client `i`.
+
+def find_unsave_nodes(neighbors, current_client_idx, split_idx, edge_list):
+
+    current_client_nodes = set(split_idx[current_client_idx])
+    unsave_nodes = []
+
+    for neighbor in neighbors:
+        is_safe = True
+        for edge in edge_list:
+            if any(node in current_client_nodes for node in edge) and neighbor in edge:
+                # Check if there are no other nodes in the edge from the same client as `neighbor`
+                neighbor_client = next(
+                    (client_nodes for client_nodes in split_idx if neighbor in client_nodes), None
+                )
+                if neighbor_client and all(
+                    node == neighbor or node not in neighbor_client for node in edge
+                ):
+                    is_safe = False
+                    break
+
+        if not is_safe:
+            unsave_nodes.append(neighbor)
+
+    return unsave_nodes
+
 # Reading the dataset
 def split_dataset(features, edge_list, labels, num_vertices, GHG, args, device): 
 
@@ -167,6 +269,8 @@ def split_dataset(features, edge_list, labels, num_vertices, GHG, args, device):
     #     for _ in range(args.num_layers):
     #         features = HG.smoothing_with_HGNN(features)
         new_features = GHG.smoothing_with_HGNN(features)
+        if args.safety:
+            total_unsafe_neighbors = set()
 
     split_X = [features[split_idx[i]] for i in range(args.n_client)]
     split_Y = [labels[split_idx[i]] for i in range(args.n_client)]   
@@ -220,7 +324,7 @@ def split_dataset(features, edge_list, labels, num_vertices, GHG, args, device):
 
                 new_edge_list, neighbors = extract_subgraph_with_neighbors(edge_list, split_idx[i])
                 node_num = node_num + len(neighbors)
-
+                
                 split_X[i] = torch.cat([split_X[i], features[neighbors]], dim=0)
                 split_Y[i] = torch.cat([split_Y[i], labels[neighbors]], dim=0)
 
@@ -255,7 +359,19 @@ def split_dataset(features, edge_list, labels, num_vertices, GHG, args, device):
                 new_edge_list, neighbors = extract_subgraph_with_neighbors(edge_list, split_idx[i])
                 GHG = Hypergraph(num_v=node_num + len(neighbors), e_list=new_edge_list)
                 split_point = split_X[i].shape[0]
-                split_X[i] = features[split_idx[i] + neighbors]
+                if args.safety:
+                    unsafe_neighbors = find_unsave_nodes(neighbors, i, split_idx, edge_list)
+                    total_unsafe_neighbors.update(unsafe_neighbors)
+                    if args.dname in ["cora-ca"]:
+                        neighbors_X = rand_response(features[neighbors], args.epsilon, neighbors, unsafe_neighbors)
+                        # print(neighbors_X.shape, features[neighbors].shape)
+                        split_X[i] = torch.cat([split_X[i], neighbors_X], dim=0)
+                    else:
+                        noise = add_laplace_noise(features[neighbors], args.epsilon, neighbors, unsafe_neighbors)
+                        # 给原tensor添加噪声
+                        split_X[i] = torch.cat([split_X[i], features[neighbors] + noise], dim=0)
+                else:
+                    split_X[i] = features[split_idx[i] + neighbors]
                 split_Y[i] = labels[split_idx[i] + neighbors]
                 split_X[i] = GHG.smoothing_with_HGNN(split_X[i])    
                 # split_X[i] = GHG.smoothing_with_HGNN(split_X[i])
@@ -266,10 +382,6 @@ def split_dataset(features, edge_list, labels, num_vertices, GHG, args, device):
                     split_X[i] = GHG.smoothing_with_HGNN(split_X[i])                               
                      
             split_structure.append(GHG)
-        elif args.method == "HNHN":
-            pass
-
-
 
     return split_X, split_Y, split_structure, split_train_mask, split_val_mask, split_test_mask
 
@@ -322,7 +434,6 @@ def extract_subgraph_with_neighbors(edge_list, idx_list, sub_edge_list=None):
     for edge in edge_list:
         if all(node in included_nodes for node in edge) and any(node in idx_set for node in edge):
             new_edge_list.append(tuple(old_to_new[node] for node in edge))
-
     return new_edge_list, list(neighbors)
 
 def label_dirichlet_partition(labels, N: int, K: int, n_parties: int, beta: float, device):
