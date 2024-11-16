@@ -73,6 +73,8 @@ class Client:
                 NumLayers=args.num_layers,
             )
         self.n_client = args.n_client
+        self.safety=args.safety
+        self.epsilon = args.epsilon
         self.model = self.model.to(device)
 
         self.rank = rank  # rank = client ID
@@ -138,7 +140,10 @@ class Client:
             self.val_accs.append(acc_val)
             if (acc_val > self.best_val_acc):
                 self.best_val_acc = acc_val
-                torch.save(self.model.state_dict(), f"model/{type(self.model).__name__}_client_{self.n_client}_{self.rank}.pt")
+                if self.safety:
+                     torch.save(self.model.state_dict(), f"model/{type(self.model).__name__}_client_{self.n_client}_{self.rank}_{self.epsilon}.pt")
+                else:
+                    torch.save(self.model.state_dict(), f"model/{type(self.model).__name__}_client_{self.n_client}_{self.rank}.pt")
         self.train_losses.append(loss_train)
         loss_test, acc_test = self.local_test()
         self.test_losses.append(loss_test)

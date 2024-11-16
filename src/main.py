@@ -116,7 +116,7 @@ if __name__ == '__main__':
 
         test_result = []
         for client in server.clients:
-            client.model.load_state_dict(torch.load(f"model/{type(client.model).__name__}_client_{args.n_client}_{client.rank}.pt"))
+            client.model.load_state_dict(torch.load(f"model/{type(client.model).__name__}_client_{args.n_client}_{client.rank}_{args.epsilon}.pt"))
         
         test_results = np.array([client.local_test() for client in server.clients])
 
