@@ -362,7 +362,7 @@ def split_dataset(features, edge_list, labels, num_vertices, GHG, args, device):
                 if args.safety:
                     unsafe_neighbors = find_unsave_nodes(neighbors, i, split_idx, edge_list)
                     total_unsafe_neighbors.update(unsafe_neighbors)
-                    if args.dname in ["cora-ca"]:
+                    if args.dname in ["cora-ca", "cora", "citeseer"]:
                         neighbors_X = rand_response(features[neighbors], args.epsilon, neighbors, unsafe_neighbors)
                         # print(neighbors_X.shape, features[neighbors].shape)
                         split_X[i] = torch.cat([split_X[i], neighbors_X], dim=0)
