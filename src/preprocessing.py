@@ -157,42 +157,35 @@ def remove_cross_edges(edge_list, sub_edge_list):
     return remaining_edges
 
 def add_laplace_noise(feature, epsilon, neighbors, unsafe_neighbors):
-    """
-    给输入的二维tensor的每个元素添加自定义比例的拉普拉斯噪声。
     
-    参数:
-    - tensor: 输入的二维tensor (torch.Tensor)
-    - epsilon: 隐私预算，用于计算基础噪声强度
-    
-    返回:
-    - 带噪声的二维tensor (torch.Tensor)
-    """
-    # 获取tensor的大小
     shape = feature.shape
     
-    # 初始化与输入tensor形状相同的噪声tensor
     noisy_tensor = feature.clone()
+    mask = []
+    for neighbor in neighbors:
+            if neighbor in unsafe_neighbors:
+                mask.append(True)
+            else:
+                mask.append(False)
+    mask = torch.tensor(mask, dtype=torch.bool)
 
-    for j in range(shape[1]):  # 遍历每一列
-        # 计算该列的最大值与最小值的差
+    noise = []
+    for j in range(shape[1]):  
+        
         col_max = feature[:, j].max().item()
         col_min = feature[:, j].min().item()
         delta = col_max - col_min
-        
-        # 拉普拉斯噪声的比例参数 b = delta / epsilon
         b = delta / epsilon
         
-        # 生成与该列元素数量相同的拉普拉斯噪声
-        noise = np.random.laplace(loc=0.0, scale=b, size=shape[0])
+        noise.append(np.random.laplace(loc=0.0, scale=b, size=shape[0]))
         
-        # 将生成的噪声转换为torch tensor
-        noise_tensor = torch.tensor(noise, dtype=feature.dtype)
-        # noisy_tensor[:, j] = feature[:, j] + noisse_tensor
-        for i, neighbor in enumerate(neighbors):
-            if neighbor in unsafe_neighbors:
-                noisy_tensor[i, j] = feature[i, j] + noise_tensor[i]
+    noise_tensor = torch.tensor(np.array(noise).T, dtype=feature.dtype)
+        
+    # print(noise_tensor[mask])
+    noisy_tensor[mask] = feature[mask] + noise_tensor[mask]
 
     return noisy_tensor
+
 
 def rand_response(feature, epsilon, neighbors, unsafe_neighbors):
     p = (np.exp(epsilon) - 1) / (np.exp(epsilon) + 1)
