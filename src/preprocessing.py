@@ -375,7 +375,8 @@ def split_dataset(features, edge_list, labels, num_vertices, GHG, args, device):
                     split_X[i] = GHG.smoothing_with_HGNN(split_X[i])                               
                      
             split_structure.append(GHG)
-    print("unsafe", len(total_unsafe_neighbors))
+    if args.safety:
+        print("unsafe", len(total_unsafe_neighbors))
     return split_X, split_Y, split_structure, split_train_mask, split_val_mask, split_test_mask
 
 # Extract a subgraph containing only the client's own nodes
