@@ -13,47 +13,46 @@ config = {
 }
 rcParams.update(config)
 
-y1=[0.4833, 0.4833]
+y1=[0.7755, 0.7755]
 
 
-y2=[0.6778, 0.6778]
+y2=[0.8396, 0.8396]
 
 
-y3=[0.4015, 0.4015]
+y3=[0.8151, 0.8151]
 
-y4=[0.5044, 0.5044]
+y4=[0.8171, 0.8171]
 
-y5=[0.3335, 0.4233, 0.4819, 0.5521, 0.6006, 0.6204, 0.6462]
+y5=[0.7471, 0.8016, 0.8064, 0.8115, 0.8163, 0.8188, 0.8257, 0.8322]
 
 if __name__ == '__main__':
 
     # plt.rcParams['font.sans-serif'] = [u'SimSun']
     # plt.rcParams['axes.unicode_minus'] = False
     # plt.rcParams['font.size'] = 14
-    row_x = [0, 2]
-    plt.plot(row_x, y1, label='FedHGL w/o HC', ls='-.', c='#5977D5', linewidth=3)
+    row_x = [0, 6]
+    plt.plot(row_x, y1, label='FedSage+', ls='-.', c='#548A5A', linewidth=3)
 
 
 
-    row_x = [0, 2]
-    plt.plot(row_x, y3, label='Federated HNHN', ls='-.', c='#83B5FF', linewidth=3)
+    row_x = [0, 6]
+    plt.plot(row_x, y3, label='FedGCN (2-hop)', ls='-.', c='#A5E49E', linewidth=3)
 
 
-    row_x = [0, 2]
-    plt.plot(row_x, y4, label='Federated HyperGCN', ls='-.', c='#165584', linewidth=3)
+    row_x = [0, 6]
+    plt.plot(row_x, y4, label='FedCog', ls='-.', c='#4BCA3E', linewidth=3)
 
-    row_x = [0, 2]
+    row_x = [0, 6]
     plt.plot(row_x, y2, label='FedHGL with HC', ls='--', c='grey', linewidth=3)
 
-    row_x = [0.1, 0.2, 0.3, 0.5, 0.8, 1, 2]
+    row_x = [1, 2, 2.2, 2.5, 2.8, 3, 4, 6]
     plt.plot(row_x, y5, label='LDP-FedHGL', ls='-', c='#1f77b4', marker='s', linewidth=3)
 
+    plt.ylim(0.7, 0.85)
+    plt.xlim(1, 6)
 
     plt.gca().xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
     plt.gca().yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-
-    plt.ylim(0, 0.8)
-    plt.xlim(0, 2)
     plt.legend(loc='lower right')
     plt.ylabel('Test Accuracy',fontdict={'fontsize': 32, 'fontname': 'Times New Roman'})
     plt.xlabel('Epsilon',fontdict={'fontsize': 32, 'fontname': 'Times New Roman'})
